@@ -96,6 +96,17 @@ Analyzer profiles explicitly exclude write, shell, and recursive-agent tools whe
 
 The generated profiles contain a managed marker and area paths. A later bootstrap may update managed profiles, but it never overwrites an unmanaged name collision, creates profiles for inactive hosts, or silently deletes stale profiles.
 
+### Agent model targets
+
+These marks identify example host targets only. They are navigation aids and do not imply endorsement or partnership.
+
+<p align="center">
+  <img src="assets/agents/codex.svg" alt="OpenAI Codex logo" width="64" height="64" />&nbsp;&nbsp;&nbsp;
+  <img src="assets/agents/claude-code.svg" alt="Claude Code logo" width="64" height="64" />&nbsp;&nbsp;&nbsp;
+  <img src="assets/agents/gemini.svg" alt="Gemini logo" width="64" height="64" />&nbsp;&nbsp;&nbsp;
+  <img src="assets/agents/copilot-brand.png" alt="GitHub Copilot logo" width="140" height="51" />
+</p>
+
 ## Installation
 
 Clone this repository and run the installer from the target project:
