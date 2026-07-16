@@ -19,16 +19,36 @@ Choose exactly one mode before reading additional references.
 
 Do not read references for unrelated modes.
 
+## Existing-documentation policy
+
+`existingDocumentationPolicy: ask` is the default safety policy for `bootstrap` and any request to create documentation from zero. Before generating documents, run `scripts/codebase_analysis_ai.py docs-state` (or perform the equivalent path-only check). If any existing repository documentation is present, stop and ask the user whether to:
+
+- adopt and index it with `migrate`;
+- update or integrate it incrementally; or
+- explicitly replace it with a new bootstrap.
+
+The preflight needs only the first matching document path; it checks common text, markup, PDF, Word, PowerPoint, Excel, OpenDocument, and RTF formats plus canonical names such as `README`, `LICENSE`, and `CHANGELOG`. It does not open the file. After the user's choice, read the other relevant documents. Wait for the user's choice before reading the repository broadly or writing files. This gate does not apply when the user explicitly selects `update`, `audit`, or `migrate`.
+
+## Resolve language before analysis
+
+After selecting `bootstrap`, `update`, `audit`, or `migrate`, resolve the documentation language before reading repository content beyond what is needed to establish that decision and before drafting or normalizing prose. Use this order:
+
+1. An explicit user choice or repository documentation policy.
+2. The dominant language of canonical documentation.
+3. If neither provides reliable evidence, ask the user which language to use and wait before continuing.
+
+`setup` does not need a language decision because it only installs tooling and managed instructions. Never infer the language from source-code syntax, identifiers, comments, commit messages, contributor names, locale, or geography. Record the decision in `docs/_meta/documentation-map.json` whenever that metadata file is created or updated.
+
 ## Guardrails
 
 1. Never perform a full repository scan unless `bootstrap` is explicit.
 2. If `docs/` is missing and bootstrap was not explicit, ask whether to initialize complete documentation or stop.
-3. If `docs/` exists but `docs/_meta/documentation-map.json` does not, use `migrate`; do not silently rebuild all documentation.
+3. If `docs/` exists but `docs/_meta/documentation-map.json` does not, ask which existing-documentation path to use; after the user selects `migrate`, do not silently rebuild all documentation.
 4. In `update`, inspect only changed files, mapped documents, and directly related first-level documents. Do not traverse related links recursively.
 5. Treat `scripts/codebase_analysis_ai.py check` as a deterministic gate. Treat `audit` as an agent-led read-only review. Do not conflate them.
 6. Do not invent commands, architecture, dependencies, active functionality, or planned work. Ground every claim in repository evidence.
 7. Never expose secrets, credentials, tokens, certificates, connection strings, or personal data in generated documentation.
-8. Write in the repository's established documentation language. During bootstrap, ask the user when no reliable language evidence exists; do not infer language from source code or author location.
+8. Write in the repository's established documentation language. For `bootstrap`, `update`, `audit`, or `migrate`, ask the user when no reliable language evidence exists; do not infer language from source code or author location.
 9. Preserve technical precision while making prose understandable to an engineer unfamiliar with the repository. Define uncommon or domain-specific acronyms at first use.
 10. Preserve manual content outside managed sections.
 11. Do not overwrite existing hooks, workflows, or agent instructions without a safe managed-block update. Stop on an unrecognized conflict.
@@ -46,4 +66,4 @@ Do not read references for unrelated modes.
 
 ## Deterministic entry point
 
-Use `scripts/codebase_analysis_ai.py` for change collection, impact resolution, hash checks, link validation, project setup, and metadata refresh. Run `python scripts/codebase_analysis_ai.py --help` for available commands.
+Use `scripts/codebase_analysis_ai.py` for documentation preflight, change collection, impact resolution, hash checks, link validation, project setup, and metadata refresh. Run `python scripts/codebase_analysis_ai.py --help` for available commands.

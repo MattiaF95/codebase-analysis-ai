@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from codebase_analysis_ai.documentation_map import MapError, load_map
+from codebase_analysis_ai.documentation_preflight import first_documentation_file
 from codebase_analysis_ai.git_changes import (
     Change,
     ci_event_changes,
@@ -123,6 +124,16 @@ def command_detect(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_docs_state(args: argparse.Namespace) -> int:
+    root = _root(args.root)
+    first = first_documentation_file(root)
+    print(json.dumps({
+        "documentationState": "present" if first else "none",
+        "firstDocument": str(first.relative_to(root)).replace("\\", "/") if first else None,
+    }, indent=2))
+    return 0
+
+
 def command_todos(args: argparse.Namespace) -> int:
     root = _root(args.root)
     print(json.dumps(scan_todos(root, args.paths), indent=2))
@@ -167,6 +178,11 @@ def build_parser() -> argparse.ArgumentParser:
     detect = subparsers.add_parser("detect", help="Detect common project areas")
     detect.set_defaults(handler=command_detect)
 
+    docs_state = subparsers.add_parser(
+        "docs-state", help="Detect existing documentation without reading its contents"
+    )
+    docs_state.set_defaults(handler=command_docs_state)
+
     todos = subparsers.add_parser("todos", help="Scan selected files for TODO evidence")
     todos.add_argument("paths", nargs="+")
     todos.set_defaults(handler=command_todos)
@@ -192,4 +208,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

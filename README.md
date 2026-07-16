@@ -51,6 +51,20 @@ The traversal stops after one relationship level. If source `A` maps to document
 
 >`check` does not use an AI model. It is the command used by local hooks and CI to detect possible documentation drift.
 
+### Existing documentation
+
+For requests to create documentation from zero, the default `existingDocumentationPolicy: ask` prevents silent rebuilding:
+
+- If any repository documentation exists, the preflight stops and the agent asks whether to use `migrate`, update/integrate the existing content, or explicitly replace it. It checks the first supported document path or canonical name only, without opening it; after the choice, the agent reads the other relevant documents.
+- `migrate` rewrites existing files in place according to the selected style; `integrate` carries useful facts into a newly generated structure; `replace` deletes only the documentation files explicitly confirmed by the user before generating new files.
+- If `docs/` exists without `docs/_meta/documentation-map.json`, the `migrate` choice indexes the existing documents and maps them to repository sources.
+- `migrate` preserves useful project decisions and flows and requires confirmation before renaming, moving, deleting, or broadly restructuring documents.
+- `update` changes only impacted documents and their first-level relationships, preserving manual sections and unrelated documents.
+
+The documentation map identifies documents managed by Codebase Analysis AI through document IDs, source mappings, and source hashes. It does not prove that a document was originally created by the skill rather than adopted from an existing repository. Broad replacement or merging of existing documentation must therefore remain an explicit user decision.
+
+After an update, the agent validates the changed documentation, refreshes hashes only for reviewed changed source paths, and reruns `check`.
+
 ## Agent compatibility
 
 The core `SKILL.md`, references, scripts, and templates remain provider-neutral. Agent-specific files only define when to run the checker and when to invoke the skill.
@@ -114,6 +128,12 @@ After installation, run the deterministic checker directly with:
 python tools/codebase-analysis-ai/check.py check --mode working-tree
 ```
 
+Before a full bootstrap, run the non-content preflight to detect existing text, markup, PDF, Office, OpenDocument, and other common documentation formats:
+
+```bash
+python tools/codebase-analysis-ai/check.py docs-state
+```
+
 ## Automation
 
 ### Git hooks
@@ -132,7 +152,7 @@ The workflow checks pull request updates, merge queues through `merge_group`, me
 
 ## Documentation rules
 
-The skill follows the repository's existing documentation-language policy. During bootstrap, if no reliable language evidence exists, it asks the user before writing. The selected language is recorded in `docs/_meta/documentation-map.json`; technical identifiers, commands, API fields, and library names remain unchanged.
+The skill follows the repository's existing documentation-language policy. In `bootstrap`, `update`, `audit`, or `migrate`, if no reliable language evidence exists, it asks the user before continuing. The selected language is recorded in `docs/_meta/documentation-map.json`; technical identifiers, commands, API fields, and library names remain unchanged.
 
 Topic documents normally follow this order:
 

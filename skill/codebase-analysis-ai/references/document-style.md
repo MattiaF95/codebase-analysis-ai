@@ -5,8 +5,8 @@
 Use one language consistently across the maintained documentation set. Resolve it in this order:
 
 1. Follow an explicit user instruction or repository documentation policy.
-2. Otherwise, use the dominant language of canonical existing documentation, prioritizing the root `README.md`, `docs/README.md`, contribution guides, and current documents in `docs/`.
-3. Otherwise, during bootstrap, ask the user which language to use before writing documentation.
+2. Otherwise, use the dominant language of reliable canonical existing documentation, prioritizing the root `README.md`, `docs/README.md`, contribution guides, and current documents in `docs/`.
+3. If documentation is absent, minimal, or does not provide reliable language evidence, ask the user which language to use and wait before writing, reviewing, or normalizing documentation.
 
 Do not infer documentation language from programming-language keywords, identifiers, comments, commit messages, contributor names, locale, or geographic assumptions. If existing canonical documents use multiple languages without a clear dominant language, ask the user which language should become the standard before normalizing them.
 
