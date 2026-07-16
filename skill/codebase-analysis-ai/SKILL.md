@@ -29,6 +29,8 @@ Do not read references for unrelated modes.
 
 The preflight needs only the first matching document path; it checks common text, markup, PDF, Word, PowerPoint, Excel, OpenDocument, and RTF formats plus canonical names such as `README`, `LICENSE`, and `CHANGELOG`. It does not open the file. After the user's choice, read the other relevant documents. Wait for the user's choice before reading the repository broadly or writing files. This gate does not apply when the user explicitly selects `update`, `audit`, or `migrate`.
 
+The preflight and bootstrap inventory must exclude agent/runtime metadata and IDE configuration directories, including `.agents/`, `.codex/`, `.claude/`, `.gemini/`, `.cursor/`, `.windsurf/`, `.vscode/`, `.idea/`, `.zed/`, and `.devcontainer/`. Documentation shipped inside those directories belongs to the skill, editor, or agent integration, not to the project documentation set. The root `README.md`, when present, is the first canonical project document to read and must be integrated even if the user already summarized or mentioned it; user-provided context never replaces reading the canonical file.
+
 ## Resolve language before analysis
 
 After selecting `bootstrap`, `update`, `audit`, or `migrate`, resolve the documentation language before reading repository content beyond what is needed to establish that decision and before drafting or normalizing prose. Use this order:
@@ -60,9 +62,10 @@ After selecting `bootstrap`, `update`, `audit`, or `migrate`, resolve the docume
 2. Select one mode.
 3. Load only the references required for that mode.
 4. Run deterministic scripts before agent analysis whenever possible.
-5. Use parallel subagents only for independent macro-areas and only when the host supports them. Otherwise execute the same report contract sequentially.
-6. Validate names, links, source mappings, hashes, and managed sections before completion.
-7. Report changed documentation, checked direct relationships, unresolved evidence, and validation results.
+5. Detect the host's delegation capability before area analysis. For every detected macro-area, define a temporary area-analyzer brief and attempt to delegate it to a runtime subagent when spawning/delegation is available. The brief must include scope, excluded paths, evidence to inspect, read-only/write permissions, and the required JSON output contract. Do not require a pre-existing agent file under `.codex/`, `.claude/`, `.gemini/`, or another project directory: those are optional persistent profiles, not the definition of a runtime subagent.
+6. The parent agent remains the orchestrator: it assigns areas, collects and validates every report, resolves duplicates and cross-area flows, rejects unsupported claims, and alone writes the final documentation. Run independent area analyzers in parallel when the host supports parallel delegation; otherwise delegate sequentially. Use the sequential in-process fallback only when the host exposes no subagent/delegation capability or explicitly denies it. Repository size alone is not a reason to skip the delegation attempt.
+7. Validate names, links, source mappings, hashes, and managed sections before completion.
+8. Report changed documentation, checked direct relationships, unresolved evidence, and validation results.
 
 ## Deterministic entry point
 

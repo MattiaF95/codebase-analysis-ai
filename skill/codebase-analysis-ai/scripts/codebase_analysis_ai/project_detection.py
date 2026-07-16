@@ -4,9 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .path_filters import is_excluded_path
+
 
 def detect_areas(root: Path) -> dict[str, object]:
-    files = {path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file() and ".git" not in path.parts}
+    files = {
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file() and not is_excluded_path(path.parts)
+    }
     names = {Path(path).name for path in files}
     areas: list[str] = []
     technologies: list[str] = []
@@ -36,4 +42,3 @@ def detect_areas(root: Path) -> dict[str, object]:
         "technologies": sorted(set(technologies)),
         "fileCount": len(files),
     }
-

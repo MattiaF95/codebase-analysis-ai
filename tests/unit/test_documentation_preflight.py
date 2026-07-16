@@ -40,6 +40,34 @@ class DocumentationPreflightTest(unittest.TestCase):
 
             self.assertIsNone(first_documentation_file(root))
 
+    def test_ignores_agent_and_ide_directories(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for folder in (".codex", ".agents", ".vscode", ".idea"):
+                path = root / folder / "skill" / "README.md"
+                path.parent.mkdir(parents=True)
+                path.write_text("tooling", encoding="utf-8")
+
+            self.assertIsNone(first_documentation_file(root))
+
+    def test_prioritizes_root_readme_as_canonical_document(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "docs").mkdir()
+            (root / "docs" / "README.md").write_text("docs", encoding="utf-8")
+            (root / "README.md").write_text("project", encoding="utf-8")
+
+            self.assertEqual(first_documentation_file(root), root / "README.md")
+
+    def test_prioritizes_root_readme_case_insensitively(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "docs").mkdir()
+            (root / "docs" / "README.md").write_text("docs", encoding="utf-8")
+            (root / "Readme.md").write_text("project", encoding="utf-8")
+
+            self.assertEqual(first_documentation_file(root), root / "Readme.md")
+
 
 if __name__ == "__main__":
     unittest.main()
