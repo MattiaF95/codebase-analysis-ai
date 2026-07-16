@@ -1,28 +1,57 @@
 # Subagent contract
 
-Use independent area analyzers during bootstrap or an explicitly broad audit. The parent must attempt runtime delegation for every detected macro-area. A subagent is a temporary runtime worker created through the host's delegation mechanism; it does not need a persistent profile file in the repository.
+Use one independent analyzer per detected macro-area during `bootstrap`. A full `audit` may use existing profiles or temporary runtime workers, but it must remain read-only and must not create agent files.
 
-Each analyzer receives a self-contained brief with its area, allowed repository-relative paths, excluded paths, evidence questions, read-only boundary, and documentation-language decision. Return structured JSON with this shape:
+## Invocation brief
+
+The parent must pass the complete brief directly to each analyzer. Include:
+
+- `area`, allowed repository-relative paths, and excluded paths;
+- evidence questions and the already resolved documentation language;
+- read-only and no-recursion rules;
+- the complete output schema below.
+
+Never ask an analyzer to locate this contract through a relative path. Exclude secrets, credentials, generated output, dependency directories, VCS internals, and host metadata unless a specific metadata file is itself the evidence under review.
+
+## Output schema
+
+Return JSON only. Every documentation claim must carry repository evidence.
 
 ```json
 {
   "area": "backend",
   "paths": ["backend/src"],
-  "technologies": ["Java", "Spring Boot"],
-  "responsibilities": ["Expose REST APIs"],
-  "entryPoints": [{"path": "...", "purpose": "..."}],
-  "dependencies": {"internal": [], "external": []},
-  "flows": [{"name": "Authentication", "sources": []}],
-  "security": [],
-  "terminology": [{"term": "RBAC", "definition": "Role-Based Access Control", "sources": []}],
-  "activeFunctionality": [],
+  "technologies": [{"name": "Spring Boot", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+  "responsibilities": [{"description": "Expose REST APIs", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+  "entryPoints": [{"path": "...", "purpose": "...", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+  "dependencies": {
+    "internal": [{"name": "shared-auth", "purpose": "Authorize requests", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+    "external": [{"name": "PostgreSQL", "purpose": "Persist application data", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}]
+  },
+  "flows": [{"name": "Authentication", "description": "Validate a bearer token", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+  "security": [{"description": "Administrative endpoints require an admin role", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+  "terminology": [{"term": "RBAC", "definition": "Role-Based Access Control", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+  "activeFunctionality": [{"description": "Create and retrieve records", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
   "todos": [{"path": "...", "line": 1, "text": "..."}],
-  "documentationNeeded": [],
-  "uncertainties": [],
+  "documentationNeeded": [{"topic": "Authentication", "reason": "The flow crosses multiple components", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+  "uncertainties": [{"question": "...", "missingEvidence": "..."}],
+  "truncation": [],
   "confidence": 0.9
 }
 ```
 
-Report terminology only when its meaning is supported by repository evidence. The orchestrator merges reports, resolves duplicate flows and definitions, selects the documentation language, and assigns cross-area documentation. Do not let subagents independently choose a language or writing style.
+Each `sources` array for a reported claim must contain at least one object with a repository-relative `path`, a one-based `line` when available, and an optional `symbol`. Use an empty result array instead of unsupported claims.
 
-Do not pass conclusions from one analyzer to another. The parent orchestrator validates every report before using it. If the host exposes no runtime delegation mechanism, produce the same reports sequentially in the parent context and state the concrete capability limitation; “no pre-written agent file” is not a valid reason.
+Keep the report bounded and documentation-oriented: group closely related findings, return at most 12 items per array, at most 20 TODOs, and at most three representative sources per claim. Do not enumerate every function or file when one responsibility or flow explains them. When a limit omits relevant findings, add `{"section": "...", "omitted": 1, "reason": "contract limit"}` to `truncation`.
+
+## Analyzer rules
+
+- Read only the assigned allowed paths and never write, edit, execute mutating commands, or propose code fixes.
+- Do not spawn or invoke other agents. Do not choose a documentation language or writing style.
+- Report uncertainty instead of inferring behavior that the repository does not prove.
+
+## Parent validation and merge
+
+Reject a report when it is not valid JSON, names the wrong area, cites paths outside the allowed scope, or provides claims without sources. Retry one malformed report once; after a second failure, record the native invocation failure and perform the same analysis sequentially in the parent.
+
+The parent resolves duplicate flows and terminology, validates cross-area claims against both areas, and alone writes documentation. Do not pass one analyzer's conclusions to another. Initial absence of a profile is never a fallback reason during `bootstrap`: create the native profile first.

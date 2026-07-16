@@ -12,9 +12,9 @@ Keep repository documentation aligned with implementation changes while minimizi
 Choose exactly one mode before reading additional references.
 
 - `setup`: Install the skill, persistent agent rules, deterministic runtime, Git hooks, or GitHub Action. Require an explicit setup request. Read `references/setup-mode.md` and `references/automation.md`.
-- `bootstrap`: Create a complete documentation system from scratch. Require an explicit request to scan the full repository. Read `references/bootstrap-mode.md`, `references/project-taxonomy.md`, `references/document-style.md`, and `references/subagent-contract.md`.
+- `bootstrap`: Create a complete documentation system from scratch. Require an explicit request to scan the full repository. Read `references/bootstrap-mode.md`, `references/project-taxonomy.md`, `references/document-style.md`, and `references/subagent-contract.md`. After detecting the active host, read exactly one of `references/host-codex.md`, `references/host-claude.md`, `references/host-gemini.md`, or `references/host-copilot.md`.
 - `update`: Update existing documentation from current Git changes, a commit, or a commit range. This is the default synchronization mode. Read `references/update-mode.md`, `references/change-detection.md`, `references/impact-resolution.md`, and `references/document-style.md`.
-- `audit`: Inspect documentation accuracy, readability, language consistency, and link consistency without changing files. Read `references/audit-mode.md`, `references/quality-rules.md`, and `references/document-style.md`.
+- `audit`: Inspect documentation accuracy, readability, language consistency, and link consistency without changing files. Read `references/audit-mode.md`, `references/quality-rules.md`, and `references/document-style.md`. For an explicitly full audit, also read `references/subagent-contract.md`.
 - `migrate`: Index and normalize existing documentation that has no Codebase Analysis AI metadata. Read `references/migrate-mode.md`, `references/documentation-schema.md`, `references/naming-conventions.md`, and `references/document-style.md`.
 
 Do not read references for unrelated modes.
@@ -55,6 +55,7 @@ After selecting `bootstrap`, `update`, `audit`, or `migrate`, resolve the docume
 10. Preserve manual content outside managed sections.
 11. Do not overwrite existing hooks, workflows, or agent instructions without a safe managed-block update. Stop on an unrecognized conflict.
 12. Do not commit, push, merge, or enable branch protection unless the user explicitly requests that external action.
+13. Create persistent macro-area analyzer profiles only during `bootstrap`, after detecting the macro-areas. `setup`, `audit`, `update`, and `migrate` must not create or modify them.
 
 ## Common execution contract
 
@@ -62,10 +63,12 @@ After selecting `bootstrap`, `update`, `audit`, or `migrate`, resolve the docume
 2. Select one mode.
 3. Load only the references required for that mode.
 4. Run deterministic scripts before agent analysis whenever possible.
-5. Detect the host's delegation capability before area analysis. For every detected macro-area, define a temporary area-analyzer brief and attempt to delegate it to a runtime subagent when spawning/delegation is available. The brief must include scope, excluded paths, evidence to inspect, read-only/write permissions, and the required JSON output contract. Do not require a pre-existing agent file under `.codex/`, `.claude/`, `.gemini/`, or another project directory: those are optional persistent profiles, not the definition of a runtime subagent.
-6. The parent agent remains the orchestrator: it assigns areas, collects and validates every report, resolves duplicates and cross-area flows, rejects unsupported claims, and alone writes the final documentation. Run independent area analyzers in parallel when the host supports parallel delegation; otherwise delegate sequentially. Use the sequential in-process fallback only when the host exposes no subagent/delegation capability or explicitly denies it. Repository size alone is not a reason to skip the delegation attempt.
-7. Validate names, links, source mappings, hashes, and managed sections before completion.
-8. Report changed documentation, checked direct relationships, unresolved evidence, and validation results.
+5. Detect the active host and its delegation capability before area analysis. In `bootstrap`, create or safely update one project-level, read-only analyzer profile for every detected macro-area using the matching host reference. Render the area's allowed paths into the profile as well as the invocation brief. Never generate profiles for inactive hosts, write user-level profiles, or overwrite an unmanaged profile. A missing profile is a creation trigger, not a reason to skip native delegation; an unmanaged name collision is an explicit creation failure and must use the sequential fallback without altering the file.
+6. Give every analyzer a self-contained invocation brief containing its area, allowed paths, excluded paths, evidence questions, documentation language, read-only boundary, recursion prohibition, and the complete JSON contract from `references/subagent-contract.md`. Do not rely on a relative reference to the contract from inside a generated profile.
+7. The parent agent remains the orchestrator: it dispatches analyzers, collects and validates every report, rejects evidence outside the assigned paths, resolves duplicates and cross-area flows, and alone writes documentation. Analyzer tool restrictions prevent writes but do not enforce path-level read isolation; validate returned sources accordingly.
+8. Run independent analyzers in parallel only when the host supports it and always wait for the full dispatched batch before merging. Do not let analyzers delegate recursively. Use the sequential in-process fallback only after native profile creation, discovery, or invocation fails explicitly, the host denies delegation, or a retried report still violates the JSON contract. Repository size and initial profile absence are not fallback reasons.
+9. Validate names, links, source mappings, hashes, and managed sections before completion.
+10. Report generated analyzer profiles, delegation failures or fallbacks, changed documentation, checked direct relationships, unresolved evidence, and validation results. Do not delete stale managed profiles automatically; report them for explicit cleanup.
 
 ## Deterministic entry point
 

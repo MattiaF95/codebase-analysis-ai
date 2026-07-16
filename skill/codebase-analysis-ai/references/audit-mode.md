@@ -2,6 +2,8 @@
 
 Audit is an agent-led, read-only review. It is distinct from the deterministic `check` command.
 
+For an explicitly full audit, also read `subagent-contract.md`. Use existing host profiles or temporary runtime workers when delegation is available, but do not create or modify persistent profiles in audit mode.
+
 ## Procedure
 
 1. Resolve an explicit document scope or use the current Git impact set.

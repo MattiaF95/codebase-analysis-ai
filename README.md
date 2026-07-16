@@ -10,7 +10,9 @@
 
 Are you tired of fragmented, inconsistent, unstructured, or even missing documentation?! Codebase Analysis AI keeps documentation aligned with the codebase through bounded, evidence-based analysis and repeatable checks.
 
-It maps changed source files to the documentation they affect, reviews direct relationships, validates links and metadata, and asks an AI agent to update only what requires interpretation. Git, Python, Git hooks, and GitHub Actions provide the deterministic foundation; the agent skill handles the reasoning and writing.
+It maps changed source files to the documentation they affect, reviews direct relationships, validates links and metadata, and asks an AI agent to update only what requires interpretation. During a full bootstrap, it also detects repository macro-areas and delegates each one to a dedicated read-only analyzer before the parent agent writes the documentation.
+
+Git, Python, Git hooks, and GitHub Actions provide the deterministic foundation; the agent skill handles evidence collection, orchestration, validation, and writing.
 
 The result is a documentation system that helps a new developer understand the project's purpose, technologies, startup instructions, architecture, active functionality, known TODOs, and related flows immediately after cloning the repository.
 
@@ -23,10 +25,13 @@ Codebase Analysis AI reduces documentation drift by:
 - starting from Git changes instead of scanning the complete repository;
 - mapping source files to directly affected documents;
 - checking links, hashes, metadata, naming, and documentation coverage;
+- reviewing bootstrap macro-areas through isolated, read-only subagents;
 - preserving a consistent documentation structure and evidence-backed TODOs;
 - supporting monoliths, full-stack applications, microservices, libraries, mobile applications, and infrastructure repositories.
 
 ## How it works
+
+### Incremental updates
 
 1. Git identifies changed or uncommitted source files.
 2. A deterministic Python checker resolves source-to-document mappings and direct first-level relationships.
@@ -38,12 +43,23 @@ The traversal stops after one relationship level. If source `A` maps to document
 
 ![Incremental documentation update flow](assets/incremental-updates.webp)
 
+### Full bootstrap orchestration
+
+1. The parent detects adaptive macro-areas from repository evidence.
+2. For the active host only, it creates one project-level analyzer profile per area with explicit read-only permissions and allowed paths.
+3. Independent analyzers review their assigned areas and return bounded JSON reports whose claims include repository sources.
+4. The parent validates paths and evidence, resolves cross-area flows, and alone writes the documentation.
+
+![Bootstrap macro-area analyzer orchestration](assets/bootstrap-orchestration.png)
+
+Profiles are created only during `bootstrap`. Initial absence triggers native profile creation, not a sequential shortcut. The parent falls back to in-process analysis only after explicit creation, discovery, invocation, timeout, or repeated contract failure.
+
 ## Modes
 
 | Mode | Purpose | Scope | Explicit request |
 |---|---|---|---|
 | `setup` | Install agent rules, checker, hooks, and GitHub Action | Configuration files | Yes |
-| `bootstrap` | Create a complete documentation system | Full repository | Yes |
+| `bootstrap` | Create a complete documentation system using macro-area analyzers | Full repository and active-host analyzer profiles | Yes |
 | `update` | Synchronize existing documentation | Changed files and direct relationships | No |
 | `audit` | Review accuracy without changing files | Selected or impacted documentation | No |
 | `migrate` | Index existing documentation and create metadata | Existing docs and mapped sources | Yes when restructuring is required |
@@ -67,25 +83,18 @@ After an update, the agent validates the changed documentation, refreshes hashes
 
 ## Agent compatibility
 
-The core `SKILL.md`, references, scripts, and templates remain provider-neutral. Agent-specific files only define when to run the checker and when to invoke the skill.
+The core workflow remains provider-neutral. During a full bootstrap, the skill detects the active host and creates one project-level, read-only analyzer profile per detected macro-area. It never creates profiles for inactive hosts or at user scope.
 
-| Agent | Skill location | Instruction file | Invocation |
+| Agent | Skill location and invocation | Analyzer profile | Discovery or invocation |
 |---|---|---|---|
-| OpenAI Codex | `.agents/skills/codebase-analysis-ai/` | `AGENTS.md` | `$codebase-analysis-ai` |
-| Claude Code | `.claude/skills/codebase-analysis-ai/` | `CLAUDE.md` | `/codebase-analysis-ai` |
-| Gemini CLI | `.agents/skills/codebase-analysis-ai/` | `GEMINI.md` | Activate `codebase-analysis-ai` |
-| GitHub Copilot | `.agents/skills/codebase-analysis-ai/` | `.github/copilot-instructions.md` | Ask Copilot to activate `codebase-analysis-ai` |
+| OpenAI Codex | `.agents/skills/codebase-analysis-ai/`; `$codebase-analysis-ai` | `.codex/agents/<area>-analyzer.toml` | Explicit spawn instruction |
+| Claude Code | `.claude/skills/codebase-analysis-ai/`; `/codebase-analysis-ai` | `.claude/agents/<area>-analyzer.md` | Name or @-mention; restart only for a newly created agent directory |
+| Gemini CLI | `.agents/skills/codebase-analysis-ai/`; activate `codebase-analysis-ai` | `.gemini/agents/<area>-analyzer.md` | `/agents refresh`, then `@<area>-analyzer` |
+| GitHub Copilot | `.agents/skills/codebase-analysis-ai/`; ask Copilot to activate it | `.github/agents/<area>-analyzer.agent.md` | CLI restart or enabled `agent/runSubagent` tool in VS Code |
 
-### Agent model targets
+Analyzer profiles explicitly exclude write, shell, and recursive-agent tools where the host supports tool allowlists. Codex profiles set `sandbox_mode = "read-only"`. Every invocation receives a self-contained JSON evidence contract; only the parent agent merges reports and writes documentation.
 
-These marks identify example host targets only. They are navigation aids and do not imply endorsement or partnership.
-
-<p align="center">
-  <img src="assets/agents/codex.svg" alt="OpenAI Codex logo" width="64" height="64" />&nbsp;&nbsp;&nbsp;
-  <img src="assets/agents/claude-code.svg" alt="Claude Code logo" width="64" height="64" />&nbsp;&nbsp;&nbsp;
-  <img src="assets/agents/gemini.svg" alt="Gemini logo" width="64" height="64" />&nbsp;&nbsp;&nbsp;
-  <img src="assets/agents/copilot-brand.png" alt="GitHub Copilot logo" width="140" height="51" />
-</p>
+The generated profiles contain a managed marker and area paths. A later bootstrap may update managed profiles, but it never overwrites an unmanaged name collision, creates profiles for inactive hosts, or silently deletes stale profiles.
 
 ## Installation
 
@@ -109,7 +118,7 @@ python install.py --project-root /path/to/project --agent codex --scope project
 python install.py --agent codex --scope user
 ```
 
-The installer is idempotent, updates only managed files, and preserves unrelated instructions. Existing unknown hooks, workflows, or agent files are not replaced silently.
+The installer is idempotent, updates only managed files, and preserves unrelated instructions. It installs the skill and requested automation but does not pre-create macro-area analyzers because areas are detected during bootstrap. Existing unknown hooks, workflows, or agent files are not replaced silently.
 
 ## Usage
 
@@ -117,6 +126,7 @@ Use explicit requests for operations that create or restructure documentation:
 
 ```text
 Use codebase-analysis-ai in bootstrap mode and create the complete project documentation.
+Detect the macro-areas, create one read-only analyzer per area for the active host, and write the documentation in English.
 Use codebase-analysis-ai to update the documentation affected by the current Git changes.
 Use codebase-analysis-ai to audit the existing documentation without modifying files.
 Use codebase-analysis-ai setup to install agent rules, Git hooks, and the GitHub Action.
@@ -162,7 +172,7 @@ Topic documents normally follow this order:
 4. Active functionality and planned work
 5. Related documentation and sources
 
-The skill never invents functionality, TODOs, commands, dependencies, or architectural relationships. Sensitive files, credentials, certificates, environment files, dependencies, and generated build directories are excluded from analysis.
+The skill never invents functionality, TODOs, commands, dependencies, or architectural relationships. Analyzer reports must cite repository-relative paths and source lines, remain bounded, and expose uncertainties instead of unsupported claims. Sensitive files, credentials, certificates, environment files, dependency directories, and generated build directories are excluded from analysis.
 
 ## Generated documentation structure
 
@@ -170,6 +180,8 @@ The structure is adaptive: the skill detects repository shape, technologies, dep
 
 ```text
 project/
+├── <active-host-agent-directory>/
+│   └── <area>-analyzer.<host-format>
 ├── README.md
 ├── docs/
 │   ├── README.md
@@ -182,7 +194,7 @@ project/
 └── tools/codebase-analysis-ai/
 ```
 
-Mobile applications, infrastructure repositories, libraries, command-line tools, and other repository types receive a taxonomy appropriate to their evidence.
+`<active-host-agent-directory>` resolves to `.codex/agents/`, `.claude/agents/`, `.gemini/agents/`, or `.github/agents/`. Mobile applications, infrastructure repositories, libraries, command-line tools, and other repository types receive a taxonomy appropriate to their evidence.
 
 ![Illustrative generated repository structure in a developer workspace](assets/repository-structure.webp)
 
@@ -196,7 +208,7 @@ The installable skill lives under `skill/codebase-analysis-ai/`; the separate Py
 python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
-The tests verify mappings, one-level impact resolution, link validation, installer idempotency, language metadata, stale-source detection, and hash refreshes. They do not judge whether AI-generated prose is clear or technically complete, and they do not verify live GitHub branch protection.
+The tests verify mappings, one-level impact resolution, link validation, installer idempotency, language metadata, stale-source detection, and hash refreshes. Skill validation checks its structure and metadata. Live host tests are still required to verify profile discovery and delegation behavior across Codex, Claude Code, Gemini CLI, and GitHub Copilot.
 
 ## Repository structure
 
@@ -209,7 +221,7 @@ codebase-analysis-ai/
 ├── skill/codebase-analysis-ai/
 │   ├── SKILL.md                       Mode router and safety boundaries
 │   ├── agents/openai.yaml             Optional Codex UI metadata
-│   ├── references/                    Mode-specific instructions
+│   ├── references/                    Mode, evidence-contract, and host-specific instructions
 │   ├── scripts/                       Deterministic analysis and installation code
 │   └── assets/                        Hooks, workflows, adapters, and templates
 └── tests/                             Unit, integration, and fixture tests
