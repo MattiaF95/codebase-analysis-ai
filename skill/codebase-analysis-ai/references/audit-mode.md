@@ -1,0 +1,17 @@
+# Audit mode
+
+Audit is an agent-led, read-only review. It is distinct from the deterministic `check` command.
+
+## Procedure
+
+1. Resolve an explicit document scope or use the current Git impact set.
+2. Validate names, required sections, links, source references, hashes, and mapping consistency.
+3. Verify the documentation language against the recorded decision and canonical documents.
+4. Review changed or selected documents for understandable context, direct sentences, explicit component names, and explained acronyms using `document-style.md`.
+5. Compare documented active behavior with repository evidence.
+6. Verify that TODOs and future functionality have explicit sources.
+7. Check direct related documents for contradictions and inconsistent terminology.
+8. Report findings by severity: blocking, stale, incomplete, and advisory.
+9. Do not modify files unless the user changes the request to `update`.
+
+If the user requests a full documentation audit, confirm whether a complete repository scan is intended before expanding beyond mapped documentation sources.

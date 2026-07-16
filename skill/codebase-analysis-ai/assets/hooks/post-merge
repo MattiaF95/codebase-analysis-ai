@@ -1,0 +1,15 @@
+#!/bin/sh
+# Managed by Codebase Analysis AI.
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+checker="$repo_root/tools/codebase-analysis-ai/check.py"
+[ -f "$checker" ] || exit 0
+
+if command -v python3 >/dev/null 2>&1; then py=python3
+elif command -v python >/dev/null 2>&1; then py=python
+elif command -v py >/dev/null 2>&1; then py="py -3"
+else exit 0
+fi
+
+$py "$checker" check --mode post-merge --base ORIG_HEAD --head HEAD --warn-only
+exit 0
+

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codebase Analysis AI"
+  short_description: "Agentic codebase analysis for living documentation"
+  default_prompt: "Analyze the current Git changes and update only the directly affected project documentation and first-level related documents."

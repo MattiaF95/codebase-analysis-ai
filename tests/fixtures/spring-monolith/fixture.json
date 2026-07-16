@@ -1,0 +1,2 @@
+{"type": "monolith", "expectedAreas": ["backend", "database", "infrastructure"]}
+
