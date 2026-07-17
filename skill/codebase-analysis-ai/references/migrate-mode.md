@@ -2,6 +2,8 @@
 
 Migrate adopts existing documentation and rewrites it in place according to the selected documentation style without silently deleting it.
 
+Migration normally runs in the parent agent because its primary task is indexing and normalizing existing documentation. Reuse existing read-only area profiles only when source ownership, document mapping, or cross-area responsibility cannot be established from the migration inputs. Pass the same self-contained evidence brief and JSON contract used by `update`; validate profile safety and the working tree before and after delegation. Profiles may be invoked in parallel for independent areas, but `migrate` must never create or modify persistent profiles; use the sequential fallback when a profile is unavailable or stale.
+
 ## Procedure
 
 1. Inventory existing supported document files and their outbound links where the format is readable.

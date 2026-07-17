@@ -2,6 +2,12 @@
 
 Audit is an agent-led, read-only review. It is distinct from the deterministic `check` command.
 
+## Area delegation
+
+For a targeted audit, reuse one existing read-only profile for each selected impacted macro-area. For a full audit, reuse one profile for every detected macro-area and run independent analyzers in parallel when the host supports it. Do not create or modify persistent profiles during `audit`.
+
+Each analyzer receives a self-contained brief with its allowed and excluded paths, audit scope, documentation language, evidence questions, read-only/no-recursion rules, and the complete JSON contract. The parent validates reports, merges cross-area findings, and produces the final read-only audit report. Missing profiles, discovery failures, or malformed reports use the documented sequential fallback and are reported.
+
 For an explicitly full audit, also read `subagent-contract.md`. Use existing host profiles or temporary runtime workers when delegation is available, but do not create or modify persistent profiles in audit mode.
 
 ## Procedure

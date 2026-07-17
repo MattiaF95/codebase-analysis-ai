@@ -187,7 +187,7 @@ The skill never invents functionality, TODOs, commands, dependencies, or archite
 
 ## Generated documentation structure
 
-The structure is adaptive: the skill detects repository shape, technologies, deployment boundaries, and existing terminology, then creates only useful areas. Empty standard folders are not added merely for symmetry.
+The structure is adaptive: the skill detects repository shape, technologies, deployment boundaries, and existing terminology, then creates only useful areas. After bootstrap, `update` and `audit` reuse existing read-only profiles only for affected or selected macro-areas through the active host's native delegation mechanism; they never create persistent profiles. Before and after delegation, the parent verifies profile restrictions and working-tree integrity. Empty standard folders are not added merely for symmetry.
 
 ```text
 project/

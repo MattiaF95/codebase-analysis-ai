@@ -2,6 +2,14 @@
 
 Update is the default mode for existing Codebase Analysis AI projects.
 
+## Area delegation
+
+After the deterministic checker resolves changed files and impacted documents, map the changed paths to detected macro-areas. When existing host profiles and native delegation are available, invoke exactly one read-only analyzer for each impacted macro-area and run independent areas in parallel. Reuse profiles created during `bootstrap`; never create or modify persistent analyzer profiles during `update`.
+
+Pass each analyzer a self-contained brief containing the narrowed changed paths, allowed and excluded paths, impacted documents, evidence questions, documentation language, read-only boundary, no-recursion rule, and the complete JSON contract from `references/subagent-contract.md`. The analyzer reports evidence and documentation implications only. The parent validates every source path and report, resolves cross-area duplicates, and alone writes documentation.
+
+If a profile is missing, stale, unmanaged, undiscoverable, or invocation fails, record the concrete reason and perform the same area's analysis sequentially in the parent context. Do not skip the area and do not create a replacement profile during `update`. If no documentation is impacted, do not invoke any analyzer.
+
 ## Procedure
 
 1. Determine the change source: working tree, staged changes, commit, range, PR, merge, rebase, or pull.
