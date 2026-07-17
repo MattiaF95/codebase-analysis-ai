@@ -77,6 +77,107 @@ class ImpactGraphTest(unittest.TestCase):
             mapping.validate(),
         )
 
+    def test_accepts_agent_derived_taxonomy(self):
+        mapping = DocumentationMap(
+            Path("map.json"),
+            {
+                "schemaVersion": 1,
+                "settings": {},
+                "taxonomy": {
+                    "sourceAreas": {
+                        "billing": {
+                            "candidatePaths": ["services/billing/**"],
+                            "evidence": ["services/billing/pyproject.toml"],
+                            "reason": "independent service module",
+                        }
+                    },
+                    "documentationTopics": [{
+                        "topic": "billing-api",
+                        "candidatePaths": ["services/billing/api/**"],
+                        "sourceAreas": ["billing"],
+                        "reason": "public API boundary",
+                    }],
+                },
+                "documents": {},
+            },
+        )
+
+        self.assertEqual([], mapping.validate())
+
+    def test_rejects_unknown_topic_source_area(self):
+        mapping = DocumentationMap(
+            Path("map.json"),
+            {
+                "schemaVersion": 1,
+                "settings": {},
+                "taxonomy": {
+                    "sourceAreas": {},
+                    "documentationTopics": [{
+                        "topic": "security",
+                        "candidatePaths": ["src/security/**"],
+                        "sourceAreas": ["backend"],
+                        "reason": "authentication boundary",
+                    }],
+                },
+                "documents": {},
+            },
+        )
+
+        self.assertIn(
+            "taxonomy.documentationTopics[0]: unknown source area backend",
+            mapping.validate(),
+        )
+
+    def test_rejects_empty_persisted_taxonomy(self):
+        mapping = DocumentationMap(
+            Path("map.json"),
+            {
+                "schemaVersion": 1,
+                "settings": {},
+                "taxonomy": {"sourceAreas": {}, "documentationTopics": []},
+                "documents": {},
+            },
+        )
+
+        self.assertIn(
+            "taxonomy.sourceAreas must define at least one approved source area",
+            mapping.validate(),
+        )
+
+    def test_rejects_invalid_taxonomy_collection_types_without_crashing(self):
+        mapping = DocumentationMap(
+            Path("map.json"),
+            {
+                "schemaVersion": 1,
+                "settings": {},
+                "taxonomy": {
+                    "sourceAreas": {
+                        "backend": {
+                            "candidatePaths": "backend/**",
+                            "evidence": "pom.xml",
+                            "reason": "application module",
+                        }
+                    },
+                    "documentationTopics": [{
+                        "topic": "security",
+                        "candidatePaths": "src/security/**",
+                        "sourceAreas": None,
+                        "reason": "authentication boundary",
+                    }],
+                },
+                "documents": {},
+            },
+        )
+
+        errors = mapping.validate()
+
+        self.assertIn(
+            "taxonomy.sourceAreas.backend.candidatePaths must be a non-empty string array",
+            errors,
+        )
+        self.assertIn("taxonomy.sourceAreas.backend.evidence must be a non-empty string array", errors)
+        self.assertIn("taxonomy.documentationTopics[0].sourceAreas must be a string array", errors)
+
 
 if __name__ == "__main__":
     unittest.main()

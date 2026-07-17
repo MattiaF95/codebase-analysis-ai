@@ -8,7 +8,7 @@ The parent invokes profiles through the active host's native mechanism; this con
 
 ## Invocation brief
 
-The parent must pass the complete brief directly to each analyzer. Include:
+The parent must pass the complete brief directly to each analyzer. Allowed paths come from the user-approved, agent-derived taxonomy persisted during bootstrap, never directly from detector output. Include:
 
 - `area`, allowed repository-relative paths, and excluded paths;
 - evidence questions, documentation facets, and the already resolved documentation language;

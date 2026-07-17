@@ -22,7 +22,7 @@ from codebase_analysis_ai.git_changes import (
 )
 from codebase_analysis_ai.impact_graph import resolve_impact
 from codebase_analysis_ai.link_validator import validate_links
-from codebase_analysis_ai.project_detection import detect_areas
+from codebase_analysis_ai.project_detection import inventory_project
 from codebase_analysis_ai.project_installer import InstallConflict, install_project_components
 from codebase_analysis_ai.source_hashes import sha256_file
 from codebase_analysis_ai.setup_state import inspect_setup
@@ -121,7 +121,7 @@ def command_refresh(args: argparse.Namespace) -> int:
 
 
 def command_detect(args: argparse.Namespace) -> int:
-    print(json.dumps(detect_areas(_root(args.root)), indent=2))
+    print(json.dumps(inventory_project(_root(args.root)), indent=2))
     return 0
 
 
@@ -181,7 +181,7 @@ def build_parser() -> argparse.ArgumentParser:
     refresh.add_argument("paths", nargs="*")
     refresh.set_defaults(handler=command_refresh)
 
-    detect = subparsers.add_parser("detect", help="Detect common project areas")
+    detect = subparsers.add_parser("detect", help="Collect bounded structural project evidence")
     detect.set_defaults(handler=command_detect)
 
     docs_state = subparsers.add_parser(

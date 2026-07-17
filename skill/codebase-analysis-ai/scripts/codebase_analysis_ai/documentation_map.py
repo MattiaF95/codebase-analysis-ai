@@ -61,6 +61,11 @@ class DocumentationMap:
     def settings(self) -> dict[str, Any]:
         return self.data.setdefault("settings", {})
 
+    @property
+    def taxonomy(self) -> dict[str, Any]:
+        taxonomy = self.data.get("taxonomy")
+        return taxonomy if isinstance(taxonomy, dict) else {}
+
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(self.data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -80,6 +85,66 @@ class DocumentationMap:
                 "settings.languageDecisionSource must be user, repository-policy, or existing-canonical-docs"
             )
         paths: dict[str, str] = {}
+        taxonomy = self.data.get("taxonomy")
+        if taxonomy is not None:
+            if not isinstance(taxonomy, dict):
+                errors.append("taxonomy must be an object")
+            else:
+                source_areas = taxonomy.get("sourceAreas", {})
+                topics = taxonomy.get("documentationTopics", [])
+                if not isinstance(source_areas, dict):
+                    errors.append("taxonomy.sourceAreas must be an object")
+                    source_areas = {}
+                elif not source_areas:
+                    errors.append("taxonomy.sourceAreas must define at least one approved source area")
+                if not isinstance(topics, list):
+                    errors.append("taxonomy.documentationTopics must be an array")
+                    topics = []
+                for area_id, area in source_areas.items():
+                    if not isinstance(area, dict):
+                        errors.append(f"taxonomy.sourceAreas.{area_id} must be an object")
+                        continue
+                    candidate_paths = area.get("candidatePaths")
+                    evidence = area.get("evidence")
+                    reason = area.get("reason")
+                    if not isinstance(candidate_paths, list) or not candidate_paths or not all(
+                        isinstance(path, str) and path for path in candidate_paths
+                    ):
+                        errors.append(f"taxonomy.sourceAreas.{area_id}.candidatePaths must be a non-empty string array")
+                    if not isinstance(evidence, list) or not evidence or not all(
+                        isinstance(path, str) and path for path in evidence
+                    ):
+                        errors.append(f"taxonomy.sourceAreas.{area_id}.evidence must be a non-empty string array")
+                    if not isinstance(reason, str) or not reason:
+                        errors.append(f"taxonomy.sourceAreas.{area_id}.reason must be a non-empty string")
+                for index, topic in enumerate(topics):
+                    if not isinstance(topic, dict):
+                        errors.append(f"taxonomy.documentationTopics[{index}] must be an object")
+                        continue
+                    topic_name = topic.get("topic")
+                    candidate_paths = topic.get("candidatePaths")
+                    source_area_ids = topic.get("sourceAreas")
+                    reason = topic.get("reason")
+                    if not isinstance(topic_name, str) or not topic_name:
+                        errors.append(f"taxonomy.documentationTopics[{index}].topic must be a non-empty string")
+                    if not isinstance(candidate_paths, list) or not candidate_paths or not all(
+                        isinstance(path, str) and path for path in candidate_paths
+                    ):
+                        errors.append(
+                            f"taxonomy.documentationTopics[{index}].candidatePaths must be a non-empty string array"
+                        )
+                    if not isinstance(source_area_ids, list) or not all(
+                        isinstance(area_id, str) and area_id for area_id in source_area_ids
+                    ):
+                        errors.append(f"taxonomy.documentationTopics[{index}].sourceAreas must be a string array")
+                        source_area_ids = []
+                    if not isinstance(reason, str) or not reason:
+                        errors.append(f"taxonomy.documentationTopics[{index}].reason must be a non-empty string")
+                    for area_id in source_area_ids:
+                        if area_id not in source_areas:
+                            errors.append(
+                                f"taxonomy.documentationTopics[{index}]: unknown source area {area_id}"
+                            )
         for doc_id, document in self.documents.items():
             path = document.get("path")
             if not path:

@@ -1,117 +1,164 @@
-"""Detect common project areas without interpreting source code."""
+"""Collect bounded structural repository evidence without interpreting architecture."""
 
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 
 from .path_filters import is_excluded_path
 
 
-def detect_areas(root: Path) -> dict[str, object]:
-    files = {
-        path.relative_to(root).as_posix()
-        for path in root.rglob("*")
-        if path.is_file() and not is_excluded_path(path.parts)
-    }
-    names = {Path(path).name for path in files}
-    areas: list[str] = []
-    technologies: list[str] = []
+SCHEMA_VERSION = 2
+MAX_ROOT_FILES = 50
+MAX_SHALLOW_FILES = 150
+MAX_STRUCTURAL_FILES = 100
+MAX_SIGNAL_PATHS = 30
+MAX_DIRECTORY_PATHS = 100
+MAX_EXTENSION_TYPES = 100
 
-    backend_detected = "pom.xml" in names or any(name.endswith(".gradle") for name in names)
-    if backend_detected:
-        areas.append("backend")
-        technologies.append("Java/JVM")
-    if "package.json" in names:
-        technologies.append("Node.js")
-    if "angular.json" in names:
-        areas.append("frontend")
-        technologies.append("Angular")
-    elif any(path.endswith((".tsx", ".jsx")) for path in files):
-        areas.append("frontend")
-    html_files = [path for path in files if path.endswith((".html", ".htm"))]
-    css_files = [path for path in files if path.endswith((".css", ".scss", ".sass", ".less"))]
-    js_files = [path for path in files if path.endswith((".js", ".mjs"))]
-    html_at_site_root = any(
-        len(Path(path).parts) == 1 or Path(path).parts[0].lower() in {"public", "site", "static", "web", "src", "app"}
-        for path in html_files
+STRUCTURAL_NAMES = {
+    "angular.json",
+    "build.gradle",
+    "build.gradle.kts",
+    "cargo.toml",
+    "cmakelists.txt",
+    "composer.json",
+    "docker-compose.yaml",
+    "docker-compose.yml",
+    "gemfile",
+    "go.mod",
+    "makefile",
+    "mix.exs",
+    "package.json",
+    "package.swift",
+    "pom.xml",
+    "pubspec.yaml",
+    "pyproject.toml",
+    "requirements.txt",
+    "settings.gradle",
+    "settings.gradle.kts",
+    "workspace",
+}
+
+STRUCTURAL_SUFFIXES = {
+    ".csproj",
+    ".fsproj",
+    ".sln",
+    ".tf",
+    ".vcxproj",
+}
+
+SENSITIVE_SUFFIXES = {".jks", ".key", ".p12", ".pem"}
+
+
+def _is_readme(path: Path) -> bool:
+    return path.stem.lower() == "readme"
+
+
+def _is_structural_file(path: Path) -> bool:
+    name = path.name.lower()
+    return (
+        name in STRUCTURAL_NAMES
+        or name.startswith("dockerfile")
+        or path.suffix.lower() in STRUCTURAL_SUFFIXES
+        or _is_readme(path)
     )
-    if html_files and not backend_detected and (html_at_site_root or css_files or js_files):
-        areas.append("static-site")
-        technologies.append("HTML")
-        if css_files:
-            technologies.append("CSS")
-        if js_files:
-            technologies.append("JavaScript")
-    if any(path.endswith(".sql") or "/migrations/" in f"/{path}/" for path in files):
-        areas.append("database")
-    if any(Path(path).name.startswith("Dockerfile") or "docker-compose" in path for path in files):
-        areas.append("infrastructure")
-        technologies.append("Docker")
-    if any(path.startswith((".github/workflows/", ".gitlab-ci")) for path in files):
-        areas.append("infrastructure")
-    if any("service" in part.lower() for path in files for part in Path(path).parts[:2]):
-        areas.append("services")
 
-    topic_paths: dict[str, list[str]] = {}
-    architecture_paths = sorted(path for path in files if (
-        Path(path).name.lower() in {
-            "readme.md", "package.json", "pom.xml", "build.gradle", "settings.gradle",
-            "dockerfile", "docker-compose.yml", "docker-compose.yaml", "angular.json",
-        } or path.startswith(".github/workflows/")
-    ))
-    if len(set(areas)) > 1 and architecture_paths:
-        topic_paths["architecture"] = architecture_paths[:20]
-    test_paths = sorted(path for path in files if any(
-        marker in {part.lower() for part in Path(path).parts} for marker in {"test", "tests", "spec", "specs"}
-    ) or Path(path).name.lower().startswith(("test_", "spec_")) or ".test." in Path(path).name.lower())
-    if test_paths:
-        topic_paths["testing"] = test_paths[:20]
-    security_paths = sorted(path for path in files if any(
-        token in part.lower() for part in Path(path).parts for token in {"auth", "security", "permission", "policy", "identity"}
-    ))
-    if security_paths:
-        topic_paths["security"] = security_paths[:20]
-    deployment_paths = sorted(path for path in files if "docker" in path.lower() or "deploy" in path.lower() or ".github/workflows/" in path)
-    if deployment_paths:
-        topic_paths["deployment"] = deployment_paths[:20]
-    if "static-site" in areas:
-        seo_paths = sorted(path for path in files if any(token in Path(path).name.lower() for token in {"robots", "sitemap", "seo"}))
-        if seo_paths or html_files:
-            topic_paths["seo"] = (seo_paths or html_files)[:20]
 
-    def source_areas_for(paths: list[str]) -> list[str]:
-        inferred: set[str] = set()
-        for path in paths:
-            parts = {part.lower() for part in Path(path).parts}
-            for area in set(areas):
-                if area.lower() in parts:
-                    inferred.add(area)
-            if "static-site" in areas and Path(path).suffix.lower() in {
-                ".html", ".htm", ".css", ".scss", ".sass", ".less", ".js", ".mjs"
-            }:
-                inferred.add("static-site")
-        return sorted(inferred)
+def _is_sensitive_path(path: Path) -> bool:
+    name = path.name.lower()
+    return name == ".env" or name.startswith(".env.") or path.suffix.lower() in SENSITIVE_SUFFIXES
 
-    topic_reasons = {
-        "architecture": "multiple source areas plus detected project boundary files",
-        "deployment": "deployment, container, or workflow paths",
-        "security": "security-related path names",
-        "seo": "HTML or SEO-related file names in a static site",
-        "testing": "test or spec paths",
+
+def _bounded(paths: list[str], limit: int) -> tuple[list[str], bool]:
+    ordered = sorted(set(paths))
+    return ordered[:limit], len(ordered) > limit
+
+
+def inventory_project(root: Path) -> dict[str, object]:
+    """Return path-only evidence for the parent agent's progressive analysis."""
+    files = sorted(
+        path.relative_to(root)
+        for path in root.rglob("*")
+        if path.is_file()
+        and not is_excluded_path(path.relative_to(root).parts)
+        and not _is_sensitive_path(path.relative_to(root))
+    )
+
+    root_files, root_truncated = _bounded(
+        [path.as_posix() for path in files if len(path.parts) == 1],
+        MAX_ROOT_FILES,
+    )
+    shallow_files, shallow_truncated = _bounded(
+        [path.as_posix() for path in files if len(path.parts) <= 2],
+        MAX_SHALLOW_FILES,
+    )
+    structural_files, structural_truncated = _bounded(
+        [path.as_posix() for path in files if _is_structural_file(path) and len(path.parts) <= 4],
+        MAX_STRUCTURAL_FILES,
+    )
+
+    module_roots, module_roots_truncated = _bounded([
+        path.parent.as_posix()
+        for path in files
+        if _is_structural_file(path)
+        and not _is_readme(path)
+        and 1 < len(path.parts) <= 4
+        and path.parts[0] not in {".github", ".gitlab"}
+    ], MAX_DIRECTORY_PATHS)
+    top_level_directories, directories_truncated = _bounded(
+        [path.parts[0] for path in files if len(path.parts) > 1],
+        MAX_DIRECTORY_PATHS,
+    )
+
+    signal_candidates = {
+        "deployment": [
+            path.as_posix() for path in files
+            if "deploy" in path.as_posix().lower()
+            or "docker" in path.name.lower()
+            or path.suffix.lower() == ".tf"
+        ],
+        "migrations": [
+            path.as_posix() for path in files
+            if "migrations" in {part.lower() for part in path.parts} or path.suffix.lower() == ".sql"
+        ],
+        "tests": [
+            path.as_posix() for path in files
+            if {"test", "tests", "spec", "specs"}.intersection(part.lower() for part in path.parts)
+            or path.name.lower().startswith(("test_", "spec_"))
+            or ".test." in path.name.lower()
+        ],
+        "workflows": [
+            path.as_posix() for path in files
+            if path.as_posix().startswith((".github/workflows/", ".gitlab-ci"))
+        ],
     }
-    topics = [
-        {
-            "topic": topic,
-            "candidatePaths": paths,
-            "sourceAreas": sorted(set(areas)) if topic == "architecture" else source_areas_for(paths),
-            "reason": topic_reasons[topic],
-        }
-        for topic, paths in sorted(topic_paths.items())
-    ]
+    signals: dict[str, list[str]] = {}
+    signals_truncated = False
+    for name, paths in sorted(signal_candidates.items()):
+        signals[name], was_truncated = _bounded(paths, MAX_SIGNAL_PATHS)
+        signals_truncated = signals_truncated or was_truncated
 
+    extension_counts = Counter(path.suffix.lower() or "[no extension]" for path in files)
+    extension_items = sorted(extension_counts.items())
+    extensions_truncated = len(extension_items) > MAX_EXTENSION_TYPES
     return {
-        "areas": sorted(set(areas)),
-        "technologies": sorted(set(technologies)),
-        "documentationTopics": topics,
+        "schemaVersion": SCHEMA_VERSION,
+        "rootFiles": root_files,
+        "shallowFiles": shallow_files,
+        "topLevelDirectories": top_level_directories,
+        "structuralFiles": structural_files,
+        "moduleRoots": module_roots,
+        "extensionCounts": dict(extension_items[:MAX_EXTENSION_TYPES]),
+        "signals": signals,
         "fileCount": len(files),
+        "truncated": any((
+            root_truncated,
+            shallow_truncated,
+            structural_truncated,
+            module_roots_truncated,
+            directories_truncated,
+            extensions_truncated,
+            signals_truncated,
+        )),
     }

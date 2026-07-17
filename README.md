@@ -10,7 +10,7 @@
 
 Are you tired of fragmented, inconsistent, unstructured, or even missing documentation?! Codebase Analysis AI keeps documentation aligned with the codebase through bounded, evidence-based analysis and repeatable checks.
 
-It maps changed source files to the documentation they affect, reviews direct relationships, validates links and metadata, and asks an AI agent to update only what requires interpretation. During a full bootstrap, it detects source macro-areas and documentation topics, then uses parent-only or approved read-only delegation before the parent agent writes the documentation.
+It maps changed source files to the documentation they affect, reviews direct relationships, validates links and metadata, and asks an AI agent to update only what requires interpretation. During a full bootstrap, Python collects a bounded structural inventory; the parent agent reads the relevant project files, derives source macro-areas and documentation topics, then uses parent-only or approved read-only delegation before writing the documentation.
 
 Git, Python, Git hooks, and GitHub Actions provide the deterministic foundation; the agent skill handles evidence collection, orchestration, validation, and writing.
 
@@ -45,7 +45,7 @@ The traversal stops after one relationship level. If source `A` maps to document
 
 ### Full bootstrap orchestration
 
-1. The parent detects source macro-areas and separate documentation topics from repository evidence.
+1. A deterministic inventory identifies structural evidence; the parent selectively reads it and derives source macro-areas and separate documentation topics without relying on a fixed technology catalog.
 2. It proposes parent-only or delegated analysis for each area, explains the cost and coverage tradeoff, and asks the user before creating or invoking subagents in interactive execution.
 3. Approved analyzers review bounded source scopes and return JSON reports whose claims include repository sources; small or overlapping areas may remain in the parent.
 4. The parent validates paths and evidence, maps reports to thematic documents, resolves cross-area flows, and alone writes the documentation.
@@ -129,7 +129,7 @@ python install.py --project-root /path/to/project --agent codex --scope project
 python install.py --agent codex --scope user
 ```
 
-The installer is idempotent, updates only managed files, and preserves unrelated instructions. Before every skill invocation, the agent runs `python tools/codebase-analysis-ai/check.py setup-state --agents <host>` and the documentation checker. Missing hooks and GitHub Actions are optional and require separate confirmation; existing hooks and workflows are never replaced automatically. The installer does not pre-create macro-area analyzers because areas are detected during bootstrap. Existing unknown hooks, workflows, or agent files are not replaced silently.
+The installer is idempotent, updates only managed files, and preserves unrelated instructions. Before every skill invocation, the agent runs `python tools/codebase-analysis-ai/check.py setup-state --agents <host>` and the documentation checker. Missing hooks and GitHub Actions are optional and require separate confirmation; existing hooks and workflows are never replaced automatically. The installer does not pre-create macro-area analyzers because the parent agent derives areas from project evidence during bootstrap. Existing unknown hooks, workflows, or agent files are not replaced silently.
 
 ## Usage
 
@@ -187,7 +187,7 @@ The skill never invents functionality, TODOs, commands, dependencies, or archite
 
 ## Generated documentation structure
 
-The structure is adaptive: the skill detects repository shape, technologies, deployment boundaries, and existing terminology, then creates only useful areas. After bootstrap, `update` and `audit` reuse existing read-only profiles only for affected or selected macro-areas through the active host's native delegation mechanism; they never create persistent profiles. Before and after delegation, the parent verifies profile restrictions and working-tree integrity. Empty standard folders are not added merely for symmetry.
+The structure is adaptive: deterministic tooling inventories project evidence, while the parent agent interprets repository shape, technologies, deployment boundaries, and existing terminology and creates only useful areas. The approved taxonomy is persisted for later runs. After bootstrap, `update` and `audit` reuse existing read-only profiles only for affected or selected macro-areas through the active host's native delegation mechanism; they never create persistent profiles. Before and after delegation, the parent verifies profile restrictions and working-tree integrity. Empty standard folders are not added merely for symmetry.
 
 ```text
 project/
@@ -219,7 +219,7 @@ The installable skill lives under `skill/codebase-analysis-ai/`; the separate Py
 python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
-The tests verify mappings, one-level impact resolution, link validation, installer idempotency, language metadata, stale-source detection, and hash refreshes. Skill validation checks its structure and metadata. Live host tests are still required to verify profile discovery and delegation behavior across Codex, Claude Code, Gemini CLI, and GitHub Copilot.
+The tests verify structural inventory, mappings, one-level impact resolution, link validation, installer idempotency, language metadata, stale-source detection, and hash refreshes. Skill validation checks its structure and metadata. Live host tests are still required to verify profile discovery and delegation behavior across Codex, Claude Code, Gemini CLI, and GitHub Copilot.
 
 ## Repository structure
 
