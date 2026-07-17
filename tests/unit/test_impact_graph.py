@@ -46,7 +46,7 @@ class ImpactGraphTest(unittest.TestCase):
 
     def test_reports_unmapped_production_file(self):
         mapping = DocumentationMap(Path("map.json"), {"schemaVersion": 1, "settings": {}, "documents": {}})
-        impact = resolve_impact(mapping, ["src/NewService.java", "docs/README.md"])
+        impact = resolve_impact(mapping, ["src/NewService.java", "docs/index.md"])
         self.assertEqual(("src/NewService.java",), impact.unmapped)
 
     def test_accepts_language_metadata(self):

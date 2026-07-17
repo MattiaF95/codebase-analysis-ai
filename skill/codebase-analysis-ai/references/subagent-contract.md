@@ -62,4 +62,10 @@ The parent resolves duplicate flows and terminology, maps evidence to documentat
 
 ## Delegation decision
 
-In interactive execution, the parent must always report one of `parent-only`, `selective`, `recommended`, or `all`, explain the decision using area size, independence, overlap, host capability, and expected context cost, and ask whether to proceed. This confirmation is required even when the parent recommends no subagent. A refusal changes delegation only; it must not reduce the documentation scope.
+Use exactly three user-facing policies:
+
+- `parent-only`: the parent analyzes every area; prefer it for small repositories or highly overlapping evidence.
+- `selective`: the parent keeps small, cross-cutting, or overlapping areas and delegates large independent areas. This is the only mixed policy.
+- `all`: delegate every safely separable area; the parent still validates, merges, resolves cross-area claims, and writes documentation.
+
+After bounded read-only discovery and before substantive analysis, recommend one policy with a brief motivation based on area size, independence, overlap, host capability, and expected context cost. Show a per-area assignment for `selective` or `all`, then include the choice in the single initial confirmation. Do not use `recommended` as a policy name. A user-selected policy changes delegation only; it must not reduce documentation scope.

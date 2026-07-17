@@ -33,4 +33,4 @@ DEFAULT_EXCLUDED_PARTS = {
 
 def is_excluded_path(parts: tuple[str, ...]) -> bool:
     """Return whether a repository-relative path belongs to an excluded tree."""
-    return bool(DEFAULT_EXCLUDED_PARTS.intersection(parts))
+    return bool(DEFAULT_EXCLUDED_PARTS.intersection(parts)) or parts[:2] == ("docs", "_archive")

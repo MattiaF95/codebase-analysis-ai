@@ -38,7 +38,7 @@ def update_managed_block(target: Path, block: str) -> str:
     return action
 
 
-def _copy_managed_file(source: Path, target: Path, replacements: dict[str, str] | None = None) -> str:
+def _copy_managed_file(source: Path, target: Path, replacements: dict[str, str] | None = None) -> str | None:
     content = source.read_text(encoding="utf-8")
     for old, new in (replacements or {}).items():
         content = content.replace(old, new)
@@ -46,6 +46,8 @@ def _copy_managed_file(source: Path, target: Path, replacements: dict[str, str] 
         existing = target.read_text(encoding="utf-8", errors="replace")
         if MANAGED not in existing:
             raise InstallConflict(f"Refusing to overwrite unmanaged file: {target}")
+        if existing == content:
+            return None
         action = "updated"
     else:
         action = "created"
@@ -55,12 +57,11 @@ def _copy_managed_file(source: Path, target: Path, replacements: dict[str, str] 
 
 
 def _ensure_managed_file(source: Path, target: Path, replacements: dict[str, str] | None = None) -> str | None:
-    """Create an optional file, preserving every existing file."""
+    """Create or refresh a managed optional file without replacing unmanaged content."""
     if target.exists():
         existing = target.read_text(encoding="utf-8", errors="replace")
         if MANAGED not in existing:
             raise InstallConflict(f"Refusing to overwrite unmanaged file: {target}")
-        return None
     return _copy_managed_file(source, target, replacements)
 
 

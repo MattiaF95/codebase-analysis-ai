@@ -42,7 +42,7 @@
 
 ## Documentation
 
-See [the documentation index](docs/README.md).
+See [the documentation index](docs/index.md).
 
 ## Known limitations
 

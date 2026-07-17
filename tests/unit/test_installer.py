@@ -23,7 +23,7 @@ class InstallerTest(unittest.TestCase):
             self.assertEqual(1, content.count(START))
             self.assertIn("Keep this.", content)
 
-    def test_optional_files_are_not_replaced_when_already_managed(self):
+    def test_optional_managed_files_are_refreshed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             subprocess.run(["git", "init", "-q", str(root)], check=True)
@@ -33,11 +33,15 @@ class InstallerTest(unittest.TestCase):
             action = root / ".github" / "workflows" / "codebase-analysis-ai.yml"
             action.parent.mkdir(parents=True)
             action.write_text("# Managed by Codebase Analysis AI.\ncustom\n", encoding="utf-8")
-            before_hook = hook.read_text(encoding="utf-8")
-            before_action = action.read_text(encoding="utf-8")
             install_project_components(root, ["codex"], False, True, True)
-            self.assertEqual(before_hook, hook.read_text(encoding="utf-8"))
-            self.assertEqual(before_action, action.read_text(encoding="utf-8"))
+            self.assertNotIn("custom", hook.read_text(encoding="utf-8"))
+            self.assertIn("check --mode post-commit", hook.read_text(encoding="utf-8"))
+            self.assertNotIn("custom", action.read_text(encoding="utf-8"))
+            self.assertIn("pull_request:", action.read_text(encoding="utf-8"))
+
+            second_changes = install_project_components(root, ["codex"], False, True, True)
+            self.assertNotIn(".githooks/post-commit", second_changes)
+            self.assertNotIn(".github/workflows/codebase-analysis-ai.yml", second_changes)
 
 
 if __name__ == "__main__":

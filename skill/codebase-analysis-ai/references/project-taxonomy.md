@@ -16,4 +16,6 @@ Represent every proposed source area with `area`, `candidatePaths`, `evidence`, 
 
 Every generated area document must have evidence. Cross-area flows belong under `docs/architecture/flows/` rather than being duplicated. Do not create empty standard folders merely for symmetry.
 
+Always create `docs/index.md` independently of the adaptive taxonomy. It is the canonical navigation layer, not a source macro-area or documentation topic. Link it to each top-level active document or area index and exclude `docs/_archive/`.
+
 The taxonomy is adaptive, not a fixed folder template. Prefer repository concepts and service boundaries that readers already encounter in code, deployment, and operations. Do not create empty standard folders merely for symmetry.

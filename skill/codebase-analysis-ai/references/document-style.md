@@ -5,7 +5,7 @@
 Use one language consistently across the maintained documentation set. Resolve it in this order:
 
 1. Follow an explicit user instruction or repository documentation policy.
-2. Otherwise, use the dominant language of reliable canonical existing documentation, prioritizing the root `README.md`, `docs/README.md`, contribution guides, and current documents in `docs/`.
+2. Otherwise, use the dominant language of reliable canonical existing documentation, prioritizing `docs/index.md`, the root `README.md`, contribution guides, and current active documents in `docs/`.
 3. If documentation is absent, minimal, or does not provide reliable language evidence, ask the user which language to use and wait before writing, reviewing, or normalizing documentation.
 
 Do not infer documentation language from programming-language keywords, identifiers, comments, commit messages, contributor names, locale, or geographic assumptions. If existing canonical documents use multiple languages without a clear dominant language, ask the user which language should become the standard before normalizing them.
@@ -50,3 +50,9 @@ Require Purpose, Context, How it works, Active functionality, Related documentat
 Omit optional sections when they do not apply. Do not create empty headings or fill them with `None`, `Not applicable`, or unsupported placeholders.
 
 Every related-document link must be relative and valid. Every source entry must use a repository-relative path.
+
+## Documentation index
+
+Use `docs/index.md` as the canonical entry point for active project documentation. Keep it concise and navigational: explain the documentation set, link to every top-level active document or area index, summarize each destination in one sentence, and link to documentation coverage. Do not list `docs/_archive/` as active documentation.
+
+Read the index before selecting deeper documents. Verify it on every documentation change and update it when a document is added, removed, renamed, moved, or changes purpose. Do not traverse every indexed document when the selected intent requires only a bounded subset.

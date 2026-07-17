@@ -91,6 +91,19 @@ class ProjectInventoryTest(unittest.TestCase):
             self.assertEqual(["package.json"], result["structuralFiles"])
             self.assertEqual(1, result["fileCount"])
 
+    def test_excludes_historical_documentation_archive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archived = root / "docs" / "_archive" / "pre-bootstrap" / "package.json"
+            archived.parent.mkdir(parents=True)
+            archived.write_text("{}\n", encoding="utf-8")
+            (root / "package.json").write_text("{}\n", encoding="utf-8")
+
+            result = inventory_project(root)
+
+            self.assertEqual(["package.json"], result["structuralFiles"])
+            self.assertEqual(1, result["fileCount"])
+
     def test_excludes_sensitive_paths_from_inventory(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

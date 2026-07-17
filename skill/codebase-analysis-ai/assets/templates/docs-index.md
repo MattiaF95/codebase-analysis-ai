@@ -1,4 +1,4 @@
-# Project documentation
+# Documentation index
 
 ## Purpose
 
@@ -8,7 +8,7 @@
 
 {{ gettingStarted }}
 
-## Documentation map
+## Documentation areas
 
 {{ documentationMap }}
 

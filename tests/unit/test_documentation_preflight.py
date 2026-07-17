@@ -50,6 +50,15 @@ class DocumentationPreflightTest(unittest.TestCase):
 
             self.assertIsNone(first_documentation_file(root))
 
+    def test_ignores_historical_documentation_archive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archived = root / "docs" / "_archive" / "pre-bootstrap" / "README.md"
+            archived.parent.mkdir(parents=True)
+            archived.write_text("historical", encoding="utf-8")
+
+            self.assertIsNone(first_documentation_file(root))
+
     def test_prioritizes_root_readme_as_canonical_document(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

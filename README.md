@@ -10,7 +10,7 @@
 
 Are you tired of fragmented, inconsistent, unstructured, or even missing documentation?! Codebase Analysis AI keeps documentation aligned with the codebase through bounded, evidence-based analysis and repeatable checks.
 
-It maps changed source files to the documentation they affect, reviews direct relationships, validates links and metadata, and asks an AI agent to update only what requires interpretation. During a full bootstrap, Python collects a bounded structural inventory; the parent agent reads the relevant project files, derives source macro-areas and documentation topics, then uses parent-only or approved read-only delegation before writing the documentation.
+It maps changed source files to the documentation they affect, reviews direct relationships, validates links and metadata, and asks an AI agent to update only what requires interpretation. `docs/index.md` is the canonical navigation entry point and is verified on every documentation change. During a full bootstrap, Python collects a bounded structural inventory; the parent agent reads the relevant project files, derives source macro-areas and documentation topics, then proposes one of three delegation strategies before writing the documentation.
 
 Git, Python, Git hooks, and GitHub Actions provide the deterministic foundation; the agent skill handles evidence collection, orchestration, validation, and writing.
 
@@ -46,7 +46,7 @@ The traversal stops after one relationship level. If source `A` maps to document
 ### Full bootstrap orchestration
 
 1. A deterministic inventory identifies structural evidence; the parent selectively reads it and derives source macro-areas and separate documentation topics without relying on a fixed technology catalog.
-2. It proposes parent-only or delegated analysis for each area, explains the cost and coverage tradeoff, and asks the user before creating or invoking subagents in interactive execution.
+2. It proposes `parent-only`, mixed `selective`, or `all` safely separable areas, gives a brief evidence-based motivation and per-area assignment, and asks for confirmation before creating or invoking analyzers.
 3. Approved analyzers review bounded source scopes and return JSON reports whose claims include repository sources; small or overlapping areas may remain in the parent.
 4. The parent validates paths and evidence, maps reports to thematic documents, resolves cross-area flows, and alone writes the documentation.
 
@@ -62,22 +62,21 @@ Profiles are created only during `bootstrap`, and only for areas approved for de
 | `bootstrap` | Create a complete documentation system using macro-area analyzers | Full repository and active-host analyzer profiles | Yes |
 | `update` | Synchronize existing documentation | Changed files and direct relationships | No |
 | `audit` | Review accuracy without changing files | Selected or impacted documentation | No |
-| `migrate` | Index existing documentation and create metadata | Existing docs and mapped sources | Yes when restructuring is required |
+| `migrate` | Restructure and index existing documentation without a general content refresh | Existing docs and mapped sources | Yes when restructuring is required |
 | `check` | Run deterministic documentation-drift checks | Changed files, mappings, and direct relationships | No |
 
 >`check` does not use an AI model. It is the command used by local hooks and CI to detect possible documentation drift.
 
 ### Existing documentation
 
-For requests to create documentation from zero, the default `existingDocumentationPolicy: ask` prevents silent rebuilding:
+For requests to create documentation from zero, the default `existingDocumentationPolicy: ask` prevents silent rebuilding. When documentation exists, the agent proposes exactly two choices:
 
-- If any repository documentation exists, the preflight stops and the agent asks whether to use `migrate`, update/integrate the existing content, or explicitly replace it. It checks the first supported document path or canonical name only, without opening it; after the choice, the agent reads the other relevant documents.
-- `migrate` rewrites existing files in place according to the selected style; `integrate` carries useful facts into a newly generated structure; `replace` deletes only the documentation files explicitly confirmed by the user before generating new files.
-- If `docs/` exists without `docs/_meta/documentation-map.json`, the `migrate` choice indexes the existing documents and maps them to repository sources.
-- `migrate` preserves useful project decisions and flows and requires confirmation before renaming, moving, deleting, or broadly restructuring documents.
-- `update` changes only impacted documents and their first-level relationships, preserving manual sections and unrelated documents.
+- `archive`: reuse every useful fact in the new documentation and preserve the originals below `docs/_archive/pre-bootstrap/`;
+- `replace`: reuse every useful fact in the new documentation and remove only confirmed superseded originals after generation and validation.
 
-The documentation map identifies documents managed by Codebase Analysis AI through document IDs, source mappings, and source hashes. It does not prove that a document was originally created by the skill rather than adopted from an existing repository. Broad replacement or merging of existing documentation must therefore remain an explicit user decision.
+Canonical files that keep the same path, such as `README.md`, are rewritten in place; `archive` first preserves their original version. The archive is historical and excluded from the active index, documentation map, normal updates, and audits. `migrate` remains a separate structural operation, while `update` synchronizes impacted content with implementation evidence and preserves still-valid manual context.
+
+The documentation map identifies documents managed by Codebase Analysis AI through document IDs, source mappings, and source hashes. It does not prove that a document was originally created by the skill rather than adopted from an existing repository. Archiving or replacing existing documentation must therefore remain an explicit user decision.
 
 After an update, the agent validates the changed documentation, refreshes hashes only for reviewed changed source paths, and reruns `check`.
 
@@ -129,7 +128,7 @@ python install.py --project-root /path/to/project --agent codex --scope project
 python install.py --agent codex --scope user
 ```
 
-The installer is idempotent, updates only managed files, and preserves unrelated instructions. Before every skill invocation, the agent runs `python tools/codebase-analysis-ai/check.py setup-state --agents <host>` and the documentation checker. Missing hooks and GitHub Actions are optional and require separate confirmation; existing hooks and workflows are never replaced automatically. The installer does not pre-create macro-area analyzers because the parent agent derives areas from project evidence during bootstrap. Existing unknown hooks, workflows, or agent files are not replaced silently.
+The installer is idempotent, refreshes only managed files, and preserves unrelated instructions. Before substantive analysis, the agent runs `python tools/codebase-analysis-ai/check.py setup-state --agents <host>` and presents one initial contract covering execution phases, existing documentation, delegation, planned documents, hooks, and the GitHub Action. Every automation component receives an adaptive `create`, `add`, `refresh`, `keep`, `skip`, or `resolve conflict` proposal, even when no change is needed. Managed hooks and workflows may be refreshed after confirmation; unmanaged files are never replaced silently. The installer does not pre-create macro-area analyzers because the parent agent derives areas from project evidence during bootstrap.
 
 ## Usage
 
@@ -137,7 +136,7 @@ Use explicit requests for operations that create or restructure documentation:
 
 ```text
 Use codebase-analysis-ai in bootstrap mode and create the complete project documentation.
-Detect the source macro-areas and documentation topics, propose whether to use read-only analyzers, ask for confirmation, and write the documentation in English.
+Detect the source macro-areas and documentation topics, recommend parent-only, selective, or all delegation with a brief motivation, include automation in the initial confirmation, and write the documentation in English.
 Use codebase-analysis-ai to update the documentation affected by the current Git changes.
 Use codebase-analysis-ai to audit the existing documentation without modifying files.
 Use codebase-analysis-ai setup to install agent rules, Git hooks, and the GitHub Action.
@@ -173,7 +172,7 @@ The workflow checks pull request updates, merge queues through `merge_group`, me
 
 ## Documentation rules
 
-The skill follows the repository's existing documentation-language policy. In `bootstrap`, `update`, `audit`, or `migrate`, if no reliable language evidence exists, it asks the user before continuing. The selected language is recorded in `docs/_meta/documentation-map.json`; technical identifiers, commands, API fields, and library names remain unchanged.
+The skill reads `docs/index.md` first when present and follows the repository's existing documentation-language policy. In `bootstrap`, `update`, `audit`, or `migrate`, if no reliable language evidence exists, it includes the language choice in the initial request. The selected language is recorded in `docs/_meta/documentation-map.json`; technical identifiers, commands, API fields, and library names remain unchanged.
 
 Topic documents normally follow this order:
 
@@ -195,7 +194,7 @@ project/
 │   └── <area>-analyzer.<host-format>
 ├── README.md
 ├── docs/
-│   ├── README.md
+│   ├── index.md
 │   ├── architecture/
 │   ├── backend/
 │   ├── frontend/
@@ -204,6 +203,8 @@ project/
 │   └── _meta/
 └── tools/codebase-analysis-ai/
 ```
+
+`docs/index.md` links to every top-level active document or area index and summarizes each destination. Agents read it before deeper documentation and update it whenever navigation, document paths, or document purposes change. Historical originals under `docs/_archive/` are intentionally omitted.
 
 `<active-host-agent-directory>` resolves to `.codex/agents/`, `.claude/agents/`, `.gemini/agents/`, or `.github/agents/`. Mobile applications, infrastructure repositories, libraries, command-line tools, and other repository types receive a taxonomy appropriate to their evidence.
 
