@@ -150,7 +150,7 @@ def command_install(args: argparse.Namespace) -> int:
     root = _root(args.root)
     agents = ["codex", "claude", "gemini", "copilot"] if "all" in args.agents else args.agents
     try:
-        changed = install_project_components(root, agents, args.with_agent_rules, args.with_hooks, args.with_github_action)
+        changed = install_project_components(root, agents, True, True, True)
     except InstallConflict as exc:
         print(f"Codebase Analysis AI setup stopped: {exc}", file=sys.stderr)
         return 2
@@ -199,9 +199,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     install = subparsers.add_parser("install", help="Install project automation components")
     install.add_argument("--agents", nargs="+", default=["codex"], choices=["codex", "claude", "gemini", "copilot", "all"])
-    install.add_argument("--with-agent-rules", action="store_true")
-    install.add_argument("--with-hooks", action="store_true")
-    install.add_argument("--with-github-action", action="store_true")
+    install.epilog = "Installs the runtime and creates missing agent rules, hooks, and the dedicated workflow."
     install.set_defaults(handler=command_install)
     return parser
 

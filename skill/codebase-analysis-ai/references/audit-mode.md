@@ -6,7 +6,7 @@ Audit is an agent-led, read-only review. It is distinct from the deterministic `
 
 For a targeted audit, reuse existing read-only profiles only for user-approved selected source macro-areas. For a full audit, reuse one profile for every approved detected area and run independent analyzers in parallel when useful. A small or overlapping area may remain parent-only. Do not create or modify persistent profiles during `audit`. In the initial contract, recommend `parent-only`, `selective`, or `all` with a brief motivation and ask for confirmation even when the proposal is `parent-only`.
 
-Each analyzer receives a self-contained brief with its allowed and excluded paths, audit scope, documentation facets, documentation language, evidence questions, read-only/no-recursion rules, and the complete JSON contract. The parent validates reports, maps findings to documentation topics, merges cross-area findings, and produces the final read-only audit report. Missing profiles, discovery failures, or malformed reports use the documented sequential fallback and are reported.
+Each analyzer receives a self-contained brief with its allowed and excluded paths, audit scope, documentation facets, documentation language, evidence questions, read-only/no-recursion rules, and the complete JSON contract. The parent validates reports, preserves and prioritizes `findings`, maps them to documentation topics, merges cross-area findings, and produces the final read-only audit report. When working parent-only, use the same findings taxonomy and truncation rules. Missing profiles, discovery failures, or malformed reports use the documented sequential fallback and are reported.
 
 For an explicitly full audit, also read `subagent-contract.md`. Use existing host profiles or temporary runtime workers when delegation is available, but do not create or modify persistent profiles in audit mode.
 
@@ -19,7 +19,7 @@ For an explicitly full audit, also read `subagent-contract.md`. Use existing hos
 5. Compare documented active behavior with repository evidence.
 6. Verify that TODOs and future functionality have explicit sources.
 7. Check direct related documents for contradictions and inconsistent terminology.
-8. Report findings by severity: blocking, stale, incomplete, and advisory.
+8. Report findings using the shared `findings` contract: classify each item as `error`, `inconsistency`, `risk`, or `missing_documentation`, and use `critical`, `high`, `medium`, or `low` severity. Preserve every critical and high finding and record any lower-severity truncation.
 9. Do not modify files unless the user changes the request to `update`.
 
 If the user requests a full documentation audit, include the complete-scan boundary in the initial contract before expanding beyond mapped documentation sources.

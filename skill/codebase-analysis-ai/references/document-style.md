@@ -16,11 +16,12 @@ Keep code identifiers, command names, API fields, protocol names, library names,
 
 ## Write for humans without losing technical precision
 
-- Start each document and major section with its purpose and context before implementation detail.
+- Start each document and major section with the information the reader needs before implementation detail.
+- In the opening section, state what the document covers in one or two complete sentences. Name the component, flow, decision, or repository area described by the file.
 - Prefer familiar words and direct verbs. Use specialized terminology when it is the exact repository term, then explain what it means and why it matters.
 - Expand uncommon, ambiguous, or domain-specific acronyms at first meaningful use in each standalone document, for example `Role-Based Access Control (RBAC)`. Use the acronym afterward.
 - Do not expand an acronym when the expansion would be less recognizable than the established product, protocol, or repository term. Explain its role instead when needed.
-- Use one main idea per sentence and short paragraphs. Split dense sentences instead of stacking qualifications.
+- Keep one main idea per sentence. Use as many sentences and paragraphs as needed to explain the idea without stacking unrelated qualifications.
 - Name the acting component explicitly. Avoid vague subjects such as “it”, “the system”, or “this” when more than one component could be meant.
 - Introduce lists, tables, diagrams, and code blocks with a sentence explaining what the reader should learn from them.
 - Use lists for parallel items, tables for exact comparisons or mappings, and Mermaid diagrams only when relationships, ownership, or event order are materially clearer than prose.
@@ -29,13 +30,13 @@ Keep code identifiers, command names, API fields, protocol names, library names,
 - Prefer concrete examples from the repository over generic examples. Never let an example introduce behavior that the source does not support.
 - Avoid promotional language, filler, unexplained jargon, and paragraphs that merely restate a heading.
 
-An engineer unfamiliar with the repository should be able to identify what the documented area does, why it exists, where it is implemented, how its main flow works, and what can change or fail.
+An engineer unfamiliar with the repository should be able to identify what the documented area does, why it exists, where it is implemented, how its main flow works, and what can change or fail. Do not remove context, rationale, contracts, edge cases, or failure behavior merely to reduce document length.
 
 ## Organize from context to detail
 
 Use this full sequence for topic documents, adapting labels to the selected language:
 
-1. Purpose
+1. What this document covers
 2. Context
 3. Responsibilities
 4. How it works
@@ -46,7 +47,7 @@ Use this full sequence for topic documents, adapting labels to the selected lang
 9. Related documentation
 10. Sources
 
-Require Purpose, Context, How it works, Active functionality, Related documentation, and Sources in topic documents. Use the specialized root README, documentation index, and macro-area README templates for their respective roles while preserving the same context-to-detail progression.
+Require What this document covers, Context, How it works, Active functionality, Related documentation, and Sources in topic documents. The opening section describes the file's contents; it does not explain why documentation is useful. Use the specialized root README, documentation index, and macro-area README templates for their respective roles while preserving the same context-to-detail progression. Do not impose a line, word, or paragraph limit on the remaining sections.
 
 Omit optional sections when they do not apply. Do not create empty headings or fill them with `None`, `Not applicable`, or unsupported placeholders.
 
@@ -54,6 +55,6 @@ Every related-document link must be relative and valid. Every source entry must 
 
 ## Documentation index
 
-Use `docs/index.md` as the canonical entry point for active project documentation. Keep it concise and navigational: explain the documentation set, link to every top-level active document or area index, summarize each destination in one sentence, and link to documentation coverage. Do not list `docs/_archive/` as active documentation.
+Use `docs/index.md` as the canonical entry point for active project documentation. Keep it navigational: explain the documentation set, link to every top-level active document or area index, summarize each destination in one sentence, and link to documentation coverage. Do not list `docs/_archive/` as active documentation.
 
 Read the index before selecting deeper documents. Verify it on every documentation change and update it when a document is added, removed, renamed, moved, or changes purpose. Do not traverse every indexed document when the selected intent requires only a bounded subset.

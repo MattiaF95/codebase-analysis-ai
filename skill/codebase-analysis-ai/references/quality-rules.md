@@ -5,9 +5,9 @@
 - Verify that the selected documentation language follows repository policy, canonical existing documentation, or an explicit user choice.
 - Keep the selected language consistent across new documents and changed sections.
 - Verify that uncommon, ambiguous, and domain-specific acronyms are expanded or explained at first meaningful use.
-- Prefer direct sentences, explicit component names, short paragraphs, and context before implementation detail.
+- Prefer direct sentences, explicit component names, and context before implementation detail. Use the space required to explain behavior, rationale, contracts, edge cases, and failure modes.
 - Preserve exact technical identifiers and repository terminology while explaining their role in plain language.
-- Confirm that a reader unfamiliar with the repository can understand purpose, location, main flow, dependencies, active behavior, and limitations.
+- Confirm that a reader unfamiliar with the repository can understand what the documented area does, where it is implemented, its main flow, dependencies, active behavior, and limitations.
 - Never expose secrets or copy sensitive configuration values.
 - Keep one canonical explanation for each concern; link instead of duplicating.
 - Verify quick-start commands rather than guessing them.

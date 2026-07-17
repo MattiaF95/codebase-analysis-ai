@@ -50,6 +50,16 @@ class DocumentationPreflightTest(unittest.TestCase):
 
             self.assertIsNone(first_documentation_file(root))
 
+    def test_ignores_agent_instruction_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "AGENTS.md").write_text("agent rules", encoding="utf-8")
+            (root / "CLAUDE.md").write_text("agent rules", encoding="utf-8")
+            (root / ".github" / "copilot-instructions.md").parent.mkdir(parents=True)
+            (root / ".github" / "copilot-instructions.md").write_text("agent rules", encoding="utf-8")
+
+            self.assertIsNone(first_documentation_file(root))
+
     def test_ignores_historical_documentation_archive(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

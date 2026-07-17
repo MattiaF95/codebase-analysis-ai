@@ -1,8 +1,8 @@
 # Documentation index
 
-## Purpose
+## What this index covers
 
-{{ purpose }}
+{{ indexCoverage }}
 
 ## Getting started
 

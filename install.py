@@ -42,9 +42,6 @@ def main() -> int:
     parser.add_argument("--project-root", default=".")
     parser.add_argument("--agent", nargs="+", default=["codex"], choices=[*AGENTS, "all"])
     parser.add_argument("--scope", choices=["project", "user"], default="project")
-    parser.add_argument("--with-agent-rules", action="store_true")
-    parser.add_argument("--with-hooks", action="store_true")
-    parser.add_argument("--with-github-action", action="store_true")
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve()
@@ -57,11 +54,8 @@ def main() -> int:
             installed.add(target)
             print(f"Installed skill for {agent}: {target}")
 
-    if args.scope == "user" and (args.with_agent_rules or args.with_hooks or args.with_github_action):
-        parser.error("Project rules, hooks, and workflows require --scope project")
-
-    if args.scope == "project" and (args.with_agent_rules or args.with_hooks or args.with_github_action):
-        changed = install_project_components(project_root, agents, args.with_agent_rules, args.with_hooks, args.with_github_action)
+    if args.scope == "project":
+        changed = install_project_components(project_root, agents, True, True, True)
         for path in changed:
             print(f"Configured: {path}")
     return 0
@@ -69,4 +63,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

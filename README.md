@@ -46,13 +46,13 @@ The traversal stops after one relationship level. If source `A` maps to document
 ### Full bootstrap orchestration
 
 1. A deterministic inventory identifies structural evidence; the parent selectively reads it and derives source macro-areas and separate documentation topics without relying on a fixed technology catalog.
-2. It proposes `parent-only`, mixed `selective`, or `all` safely separable areas, gives a brief evidence-based motivation and per-area assignment, and asks for confirmation before creating or invoking analyzers.
-3. Approved analyzers review bounded source scopes and return JSON reports whose claims include repository sources; small or overlapping areas may remain in the parent.
-4. The parent validates paths and evidence, maps reports to thematic documents, resolves cross-area flows, and alone writes the documentation.
+2. It proposes `parent-only`, mixed `selective`, or `all` safely separable areas, gives a brief evidence-based motivation and per-area assignment, and asks for confirmation before creating or invoking analyzers. During bootstrap, at least two independent macro-areas with 15 or more relevant files each require analyzer creation and delegation.
+3. Approved analyzers review bounded source scopes and return JSON reports whose claims and findings include repository sources; small or overlapping areas may remain in the parent.
+4. The parent validates paths and evidence, preserves and prioritizes findings, maps reports to thematic documents, resolves cross-area flows, and alone writes the documentation. The same findings contract applies when the parent works without analyzers.
 
 ![Bootstrap macro-area analyzer orchestration](assets/bootstrap-orchestration.png)
 
-Profiles are created only during `bootstrap`, and only for areas approved for delegation. Initial absence is handled according to the approved plan: parent-only analysis is valid, while an approved profile creation or invocation failure triggers a recorded in-process fallback.
+Profiles are created only during `bootstrap`, and only for areas approved for delegation. Initial absence is handled according to the approved plan: when the two-area/15-file threshold is met, creation is mandatory; a profile creation or invocation failure triggers a recorded in-process fallback.
 
 ## Modes
 
@@ -115,10 +115,7 @@ git clone https://github.com/MattiaF95/codebase-analysis-ai.git
 python codebase-analysis-ai/install.py \
   --project-root /path/to/project \
   --agent all \
-  --scope project \
-  --with-agent-rules \
-  --with-hooks \
-  --with-github-action
+  --scope project
 ```
 
 Install only the skill for a project or for the current user:
@@ -128,7 +125,7 @@ python install.py --project-root /path/to/project --agent codex --scope project
 python install.py --agent codex --scope user
 ```
 
-The installer is idempotent, refreshes only managed files, and preserves unrelated instructions. Before substantive analysis, the agent runs `python tools/codebase-analysis-ai/check.py setup-state --agents <host>` and presents one initial contract covering execution phases, existing documentation, delegation, planned documents, hooks, and the GitHub Action. Every automation component receives an adaptive `create`, `add`, `refresh`, `keep`, `skip`, or `resolve conflict` proposal, even when no change is needed. Managed hooks and workflows may be refreshed after confirmation; unmanaged files are never replaced silently. The installer does not pre-create macro-area analyzers because the parent agent derives areas from project evidence during bootstrap.
+The installer is idempotent, creates only missing skill components, preserves existing agent instructions, hooks, workflows, and unrelated automation, and never replaces unmanaged files. During bootstrap, one project-level analyzer is mandatory for each of at least two independent macro-areas containing 15 or more relevant files.
 
 ## Usage
 

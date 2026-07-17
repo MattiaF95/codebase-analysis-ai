@@ -15,6 +15,7 @@ DEFAULT_EXCLUDED_PARTS = {
     ".idea",
     ".zed",
     ".devcontainer",
+    ".github/agents",
     "node_modules",
     ".venv",
     "venv",
@@ -30,7 +31,20 @@ DEFAULT_EXCLUDED_PARTS = {
     "__pycache__",
 }
 
+DEFAULT_EXCLUDED_FILES = {
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "copilot-instructions.md",
+}
+
 
 def is_excluded_path(parts: tuple[str, ...]) -> bool:
     """Return whether a repository-relative path belongs to an excluded tree."""
-    return bool(DEFAULT_EXCLUDED_PARTS.intersection(parts)) or parts[:2] == ("docs", "_archive")
+    return (
+        bool(DEFAULT_EXCLUDED_PARTS.intersection(parts))
+        or parts[:2] == ("docs", "_archive")
+        or parts[:2] == (".github", "agents")
+        or (parts and parts[-1] in DEFAULT_EXCLUDED_FILES)
+        or parts == (".github", "copilot-instructions.md")
+    )

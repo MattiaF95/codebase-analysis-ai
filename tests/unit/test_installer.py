@@ -23,25 +23,61 @@ class InstallerTest(unittest.TestCase):
             self.assertEqual(1, content.count(START))
             self.assertIn("Keep this.", content)
 
-    def test_optional_managed_files_are_refreshed(self):
+    def test_existing_automation_is_preserved_and_missing_files_are_created(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             subprocess.run(["git", "init", "-q", str(root)], check=True)
             hook = root / ".githooks" / "post-commit"
             hook.parent.mkdir()
             hook.write_text("#!/bin/sh\n# Managed by Codebase Analysis AI.\ncustom\n", encoding="utf-8")
+            hook.chmod(0o600)
             action = root / ".github" / "workflows" / "codebase-analysis-ai.yml"
             action.parent.mkdir(parents=True)
             action.write_text("# Managed by Codebase Analysis AI.\ncustom\n", encoding="utf-8")
             install_project_components(root, ["codex"], False, True, True)
-            self.assertNotIn("custom", hook.read_text(encoding="utf-8"))
-            self.assertIn("check --mode post-commit", hook.read_text(encoding="utf-8"))
-            self.assertNotIn("custom", action.read_text(encoding="utf-8"))
-            self.assertIn("pull_request:", action.read_text(encoding="utf-8"))
+            self.assertIn("custom", hook.read_text(encoding="utf-8"))
+            self.assertEqual(0o600, hook.stat().st_mode & 0o777)
+            self.assertIn("custom", action.read_text(encoding="utf-8"))
+            self.assertIn("check --mode pre-push", (root / ".githooks" / "pre-push").read_text(encoding="utf-8"))
 
             second_changes = install_project_components(root, ["codex"], False, True, True)
             self.assertNotIn(".githooks/post-commit", second_changes)
             self.assertNotIn(".github/workflows/codebase-analysis-ai.yml", second_changes)
+
+    def test_agent_file_is_append_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "AGENTS.md"
+            target.write_text("# Existing\n\nKeep this.\n", encoding="utf-8")
+            install_project_components(root, ["codex"], True, False, False)
+            first = target.read_text(encoding="utf-8")
+            self.assertIn("Keep this.", first)
+            install_project_components(root, ["codex"], True, False, False)
+            self.assertEqual(first, target.read_text(encoding="utf-8"))
+
+    def test_existing_runtime_is_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime = root / "tools" / "codebase-analysis-ai"
+            package = runtime / "codebase_analysis_ai"
+            package.mkdir(parents=True)
+            (runtime / "check.py").write_text("local runtime", encoding="utf-8")
+            (package / "custom.py").write_text("local module", encoding="utf-8")
+
+            install_project_components(root, ["codex"], False, False, False)
+
+            self.assertEqual("local runtime", (runtime / "check.py").read_text(encoding="utf-8"))
+            self.assertEqual("local module", (package / "custom.py").read_text(encoding="utf-8"))
+
+    def test_existing_hooks_path_is_not_replaced(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "core.hooksPath", "custom-hooks"], check=True)
+
+            with self.assertRaisesRegex(RuntimeError, "core.hooksPath"):
+                install_project_components(root, ["codex"], False, True, False)
+            self.assertFalse((root / "tools" / "codebase-analysis-ai").exists())
 
 
 if __name__ == "__main__":

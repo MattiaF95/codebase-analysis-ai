@@ -1,6 +1,6 @@
 # Subagent contract
 
-Use one independent analyzer per approved, delegable source macro-area during `bootstrap`. During `update`, use one existing analyzer for each approved impacted macro-area; during a targeted `audit`, use one for each approved selected area; during a full `audit`, use one for every approved detected area. `migrate` may use existing profiles only for unresolved source ownership or cross-area mapping. A small or overlapping area may remain parent-only. All modes must remain read-only for analyzers and must not create agent files outside `bootstrap`.
+Use one independent analyzer per approved, delegable source macro-area during `bootstrap`. When at least two independent macro-areas each contain at least 15 relevant files, profile creation and delegation for those areas are mandatory. During `update`, use one existing analyzer for each approved impacted macro-area; during a targeted `audit`, use one for each approved selected area; during a full `audit`, use one for every approved detected area. `migrate` may use existing profiles only for unresolved source ownership or cross-area mapping. A small or overlapping area may remain parent-only. All modes must remain read-only for analyzers and must not create agent files outside `bootstrap`.
 
 ## Reuse and safety checks
 
@@ -38,15 +38,27 @@ Return JSON only. Every documentation claim must carry repository evidence.
   "activeFunctionality": [{"description": "Create and retrieve records", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
   "todos": [{"path": "...", "line": 1, "text": "..."}],
   "documentationNeeded": [{"topic": "Authentication", "reason": "The flow crosses multiple components", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+  "findings": [{
+    "kind": "inconsistency",
+    "severity": "high",
+    "description": "The README documents an endpoint that is absent from the controller",
+    "impact": "Users may follow an invalid API contract",
+    "affectedPaths": ["README.md", "src/api/controller.py"],
+    "sources": [{"path": "README.md", "line": 42}, {"path": "src/api/controller.py", "line": 18}]
+  }],
   "uncertainties": [{"question": "...", "missingEvidence": "..."}],
   "truncation": [],
   "confidence": 0.9
 }
 ```
 
-Each `sources` array for a reported claim must contain at least one object with a repository-relative `path`, a one-based `line` when available, and an optional `symbol`. Use an empty result array instead of unsupported claims.
+Each `sources` array for a reported claim must contain at least one object with a repository-relative `path`, a one-based `line` when available, and an optional `symbol`. Findings may cite up to five representative sources when the inconsistency crosses multiple files. Use an empty result array instead of unsupported claims.
 
-Keep the report bounded and documentation-oriented: group closely related findings, return at most 12 items per array, at most 20 TODOs, and at most three representative sources per claim. Do not enumerate every function or file when one responsibility or flow explains them. When a limit omits relevant findings, add `{"section": "...", "omitted": 1, "reason": "contract limit"}` to `truncation`.
+Keep the report bounded and documentation-oriented: group closely related findings, return at most 24 items in ordinary arrays, at most 40 TODOs, and at most 40 `findings` per report. Do not enumerate every function or file when one responsibility or flow explains them. Findings must classify `error`, `inconsistency`, `risk`, or `missing_documentation` and use severity `critical`, `high`, `medium`, or `low`. Report every `critical` and `high` finding; if the findings exceed the report budget, put only lower-severity findings in `truncation`. When any relevant result is omitted, add `{\"section\": \"...\", \"omitted\": 1, \"reason\": \"report limit\", \"nextAction\": \"request continuation or inspect the omitted scope in the parent\"}` to `truncation`.
+
+The `findings` section is mandatory in shape even when it is empty. An empty array means that the assigned scope produced no supported error, inconsistency, risk, or missing-documentation finding; it does not mean that the scope was not inspected.
+
+The parent must preserve, validate, prioritize, and merge `findings` before writing documentation. When delegation is unavailable, the parent uses the same taxonomy, severity rules, source requirements, and truncation handling for its own analysis. Findings must never be silently discarded because the parent is working alone.
 
 ## Analyzer rules
 

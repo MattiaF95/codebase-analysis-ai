@@ -1,8 +1,8 @@
 # {{ title }}
 
-## Purpose
+## What this document covers
 
-{{ purpose }}
+{{ documentCoverage }}
 
 ## Context
 

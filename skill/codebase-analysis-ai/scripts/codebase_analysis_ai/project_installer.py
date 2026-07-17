@@ -38,6 +38,21 @@ def update_managed_block(target: Path, block: str) -> str:
     return action
 
 
+def append_managed_block_if_missing(target: Path, block: str) -> str | None:
+    """Append an agent block only when it is not already present.
+
+    Existing agent instructions, including an older managed block, are never
+    rewritten by setup.
+    """
+    existing = target.read_text(encoding="utf-8") if target.exists() else ""
+    if START in existing:
+        return None
+    separator = "\n\n" if existing.strip() else ""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(existing.rstrip() + separator + block.strip() + "\n", encoding="utf-8")
+    return "created" if not existing else "updated"
+
+
 def _copy_managed_file(source: Path, target: Path, replacements: dict[str, str] | None = None) -> str | None:
     content = source.read_text(encoding="utf-8")
     for old, new in (replacements or {}).items():
@@ -57,11 +72,12 @@ def _copy_managed_file(source: Path, target: Path, replacements: dict[str, str] 
 
 
 def _ensure_managed_file(source: Path, target: Path, replacements: dict[str, str] | None = None) -> str | None:
-    """Create or refresh a managed optional file without replacing unmanaged content."""
+    """Create a managed file when absent; preserve every existing file."""
     if target.exists():
         existing = target.read_text(encoding="utf-8", errors="replace")
         if MANAGED not in existing:
             raise InstallConflict(f"Refusing to overwrite unmanaged file: {target}")
+        return None
     return _copy_managed_file(source, target, replacements)
 
 
@@ -69,12 +85,23 @@ def _copy_runtime(project_root: Path) -> list[str]:
     source_scripts = skill_root() / "scripts"
     destination = project_root / "tools" / "codebase-analysis-ai"
     destination.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source_scripts / "codebase_analysis_ai.py", destination / "check.py")
+    changes: list[str] = []
+    check = destination / "check.py"
+    if not check.exists():
+        shutil.copy2(source_scripts / "codebase_analysis_ai.py", check)
+        changes.append("tools/codebase-analysis-ai/check.py")
     package_destination = destination / "codebase_analysis_ai"
-    if package_destination.exists():
-        shutil.rmtree(package_destination)
-    shutil.copytree(source_scripts / "codebase_analysis_ai", package_destination, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-    return ["tools/codebase-analysis-ai/check.py", "tools/codebase-analysis-ai/codebase_analysis_ai/"]
+    package_destination.mkdir(parents=True, exist_ok=True)
+    for source in (source_scripts / "codebase_analysis_ai").rglob("*"):
+        if not source.is_file() or source.suffix in {".pyc"} or "__pycache__" in source.parts:
+            continue
+        relative = source.relative_to(source_scripts / "codebase_analysis_ai")
+        target = package_destination / relative
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+            changes.append(f"tools/codebase-analysis-ai/codebase_analysis_ai/{relative.as_posix()}")
+    return changes
 
 
 def _detect_default_branch(project_root: Path) -> str:
@@ -99,6 +126,23 @@ def install_project_components(
 ) -> list[str]:
     project_root = project_root.resolve()
     assets = skill_root() / "assets"
+
+    hooks_path = ""
+    if with_hooks and (project_root / ".git").exists():
+        configured = subprocess.run(
+            ["git", "config", "--get", "core.hooksPath"],
+            cwd=project_root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        hooks_path = configured.stdout.strip()
+        if configured.returncode not in (0, 1):
+            raise InstallConflict(configured.stderr.strip() or "Could not inspect core.hooksPath")
+        if hooks_path and hooks_path != ".githooks":
+            raise InstallConflict(f"Refusing to replace existing core.hooksPath: {hooks_path}")
+
     changes = _copy_runtime(project_root)
 
     agent_targets = {
@@ -111,18 +155,19 @@ def install_project_components(
         for agent in dict.fromkeys(agents):
             template_name, target_name = agent_targets[agent]
             block = (assets / "adapters" / template_name).read_text(encoding="utf-8")
-            update_managed_block(project_root / target_name, block)
-            changes.append(target_name)
+            action = append_managed_block_if_missing(project_root / target_name, block)
+            if action:
+                changes.append(target_name)
 
     if with_hooks:
         hook_dir = project_root / ".githooks"
         for hook_name in ("post-commit", "pre-push", "post-merge", "post-rewrite"):
             target = hook_dir / hook_name
             action = _ensure_managed_file(assets / "hooks" / hook_name, target)
-            target.chmod(target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
             if action:
+                target.chmod(target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                 changes.append(f".githooks/{hook_name}")
-        if (project_root / ".git").exists():
+        if (project_root / ".git").exists() and not hooks_path:
             result = subprocess.run(
                 ["git", "config", "core.hooksPath", ".githooks"],
                 cwd=project_root,

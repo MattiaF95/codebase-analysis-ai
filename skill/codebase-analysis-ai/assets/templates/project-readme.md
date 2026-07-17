@@ -1,8 +1,8 @@
 # {{ projectName }}
 
-## Purpose
+## What this README covers
 
-{{ purpose }}
+{{ readmeCoverage }}
 
 ## Project status
 

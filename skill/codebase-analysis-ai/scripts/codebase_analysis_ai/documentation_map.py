@@ -13,6 +13,12 @@ from typing import Any, Iterable
 DEFAULT_IGNORE = [
     ".git/**",
     ".githooks/**",
+    "**/AGENTS.md",
+    "**/CLAUDE.md",
+    "**/GEMINI.md",
+    ".github/copilot-instructions.md",
+    "**/copilot-instructions.md",
+    ".github/agents/**",
     ".github/workflows/codebase-analysis-ai.yml",
     "docs/**",
     "tools/codebase-analysis-ai/**",
