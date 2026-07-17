@@ -3,7 +3,7 @@
 
 After changing application behavior, APIs, schemas, security, configuration, deployment, pipelines, or architectural flows:
 
-1. Run `python tools/codebase-analysis-ai/check.py check --mode working-tree`.
+1. Run `python tools/codebase-analysis-ai/check.py setup-state --agents copilot`, then `python tools/codebase-analysis-ai/check.py check --mode working-tree`.
 2. If no documentation is impacted, do not invoke the skill.
 3. If documentation is stale, ask Copilot to activate `codebase-analysis-ai` in incremental update mode.
 4. Inspect only changed source files, mapped documents, and their direct first-level links.

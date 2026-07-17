@@ -9,7 +9,9 @@ Keep repository documentation aligned with implementation changes while minimizi
 
 ## Select one mode
 
-Choose exactly one mode before reading additional references.
+Run `python tools/codebase-analysis-ai/check.py setup-state --agents <active-host>` before selecting a mode. If the runtime or active-host adapter is absent, stop and ask to run `setup`. If hooks or the GitHub Action are absent, report them as optional and ask separately whether to install them; if already present, continue without asking. If the setup state is ambiguous or conflicted, do not overwrite anything and ask the user.
+
+After the preflight, choose exactly one mode before reading additional references. With no explicit mode or clear intent, ask the user which mode to use. Interpret requests such as “update the documentation” as `update`.
 
 - `setup`: Install the skill, persistent agent rules, deterministic runtime, Git hooks, or GitHub Action. Require an explicit setup request. Read `references/setup-mode.md` and `references/automation.md`.
 - `bootstrap`: Create a complete documentation system from scratch. Require an explicit request to scan the full repository. Read `references/bootstrap-mode.md`, `references/project-taxonomy.md`, `references/document-style.md`, and `references/subagent-contract.md`. After detecting the active host, read exactly one of `references/host-codex.md`, `references/host-claude.md`, `references/host-gemini.md`, or `references/host-copilot.md`.
@@ -27,7 +29,7 @@ Do not read references for unrelated modes.
 - update or integrate it incrementally; or
 - explicitly replace it with a new bootstrap.
 
-The preflight needs only the first matching document path; it checks common text, markup, PDF, Word, PowerPoint, Excel, OpenDocument, and RTF formats plus canonical names such as `README`, `LICENSE`, and `CHANGELOG`. It does not open the file. After the user's choice, read the other relevant documents. Wait for the user's choice before reading the repository broadly or writing files. This gate does not apply when the user explicitly selects `update`, `audit`, or `migrate`.
+The setup preflight is read-only and checks common documentation formats plus canonical names such as `README`, `LICENSE`, and `CHANGELOG` without opening arbitrary project files. The documentation check may then inspect only the mapped paths needed for the selected mode. The preflight gate applies even when the user explicitly selects `update`, `audit`, or `migrate`.
 
 The preflight and bootstrap inventory must exclude agent/runtime metadata and IDE configuration directories, including `.agents/`, `.codex/`, `.claude/`, `.gemini/`, `.cursor/`, `.windsurf/`, `.vscode/`, `.idea/`, `.zed/`, and `.devcontainer/`. Documentation shipped inside those directories belongs to the skill, editor, or agent integration, not to the project documentation set. The root `README.md`, when present, is the first canonical project document to read and must be integrated even if the user already summarized or mentioned it; user-provided context never replaces reading the canonical file.
 

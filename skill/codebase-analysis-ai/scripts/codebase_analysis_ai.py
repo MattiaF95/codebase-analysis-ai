@@ -25,6 +25,7 @@ from codebase_analysis_ai.link_validator import validate_links
 from codebase_analysis_ai.project_detection import detect_areas
 from codebase_analysis_ai.project_installer import InstallConflict, install_project_components
 from codebase_analysis_ai.source_hashes import sha256_file
+from codebase_analysis_ai.setup_state import inspect_setup
 from codebase_analysis_ai.todo_scanner import scan_todos
 
 
@@ -134,6 +135,11 @@ def command_docs_state(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_setup_state(args: argparse.Namespace) -> int:
+    print(json.dumps(inspect_setup(_root(args.root), args.agents), indent=2))
+    return 0
+
+
 def command_todos(args: argparse.Namespace) -> int:
     root = _root(args.root)
     print(json.dumps(scan_todos(root, args.paths), indent=2))
@@ -182,6 +188,10 @@ def build_parser() -> argparse.ArgumentParser:
         "docs-state", help="Detect existing documentation without reading its contents"
     )
     docs_state.set_defaults(handler=command_docs_state)
+
+    setup_state = subparsers.add_parser("setup-state", help="Inspect project setup without changing files")
+    setup_state.add_argument("--agents", nargs="+", default=["codex"], choices=["codex", "claude", "gemini", "copilot", "all"])
+    setup_state.set_defaults(handler=command_setup_state)
 
     todos = subparsers.add_parser("todos", help="Scan selected files for TODO evidence")
     todos.add_argument("paths", nargs="+")

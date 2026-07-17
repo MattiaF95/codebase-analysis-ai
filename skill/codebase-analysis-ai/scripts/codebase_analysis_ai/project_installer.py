@@ -54,6 +54,16 @@ def _copy_managed_file(source: Path, target: Path, replacements: dict[str, str] 
     return action
 
 
+def _ensure_managed_file(source: Path, target: Path, replacements: dict[str, str] | None = None) -> str | None:
+    """Create an optional file, preserving every existing file."""
+    if target.exists():
+        existing = target.read_text(encoding="utf-8", errors="replace")
+        if MANAGED not in existing:
+            raise InstallConflict(f"Refusing to overwrite unmanaged file: {target}")
+        return None
+    return _copy_managed_file(source, target, replacements)
+
+
 def _copy_runtime(project_root: Path) -> list[str]:
     source_scripts = skill_root() / "scripts"
     destination = project_root / "tools" / "codebase-analysis-ai"
@@ -107,9 +117,10 @@ def install_project_components(
         hook_dir = project_root / ".githooks"
         for hook_name in ("post-commit", "pre-push", "post-merge", "post-rewrite"):
             target = hook_dir / hook_name
-            _copy_managed_file(assets / "hooks" / hook_name, target)
+            action = _ensure_managed_file(assets / "hooks" / hook_name, target)
             target.chmod(target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-            changes.append(f".githooks/{hook_name}")
+            if action:
+                changes.append(f".githooks/{hook_name}")
         if (project_root / ".git").exists():
             result = subprocess.run(
                 ["git", "config", "core.hooksPath", ".githooks"],
@@ -124,12 +135,12 @@ def install_project_components(
 
     if with_github_action:
         workflow = project_root / ".github" / "workflows" / "codebase-analysis-ai.yml"
-        _copy_managed_file(
+        action = _ensure_managed_file(
             assets / "workflows" / "codebase-analysis-ai.yml",
             workflow,
             {"__DEFAULT_BRANCH__": _detect_default_branch(project_root)},
         )
-        changes.append(".github/workflows/codebase-analysis-ai.yml")
+        if action:
+            changes.append(".github/workflows/codebase-analysis-ai.yml")
 
     return sorted(set(changes))
-

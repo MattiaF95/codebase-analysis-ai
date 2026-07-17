@@ -3,7 +3,7 @@
 
 After changing application behavior, APIs, schemas, security, configuration, deployment, pipelines, or architectural flows:
 
-1. Run `python tools/codebase-analysis-ai/check.py check --mode working-tree`.
+1. Run `python tools/codebase-analysis-ai/check.py setup-state --agents claude`, then `python tools/codebase-analysis-ai/check.py check --mode working-tree`.
 2. If no documentation is impacted, do not invoke the skill.
 3. If documentation is stale, invoke `/codebase-analysis-ai` in incremental update mode.
 4. Inspect only changed source files, mapped documents, and their direct first-level links.
@@ -12,4 +12,3 @@ After changing application behavior, APIs, schemas, security, configuration, dep
 7. Do not invent active functionality, TODOs, commands, dependencies, or architectural relationships.
 8. Preserve manual content outside managed sections.
 <!-- codebase-analysis-ai:end -->
-

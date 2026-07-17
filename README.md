@@ -129,7 +129,7 @@ python install.py --project-root /path/to/project --agent codex --scope project
 python install.py --agent codex --scope user
 ```
 
-The installer is idempotent, updates only managed files, and preserves unrelated instructions. It installs the skill and requested automation but does not pre-create macro-area analyzers because areas are detected during bootstrap. Existing unknown hooks, workflows, or agent files are not replaced silently.
+The installer is idempotent, updates only managed files, and preserves unrelated instructions. Before every skill invocation, the agent runs `python tools/codebase-analysis-ai/check.py setup-state --agents <host>` and the documentation checker. Missing hooks and GitHub Actions are optional and require separate confirmation; existing hooks and workflows are never replaced automatically. The installer does not pre-create macro-area analyzers because areas are detected during bootstrap. Existing unknown hooks, workflows, or agent files are not replaced silently.
 
 ## Usage
 
