@@ -25,4 +25,3 @@ def scan_todos(root: Path, paths: Iterable[str]) -> list[dict[str, object]]:
             if match:
                 findings.append({"path": relative, "line": number, "marker": match.group(1).upper(), "text": match.group(2).strip()})
     return findings
-

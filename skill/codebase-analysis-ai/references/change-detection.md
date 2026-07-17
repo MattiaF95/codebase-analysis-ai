@@ -17,4 +17,3 @@ For CI, read the event payload:
 Handle add, modify, delete, rename, and copy statuses. Treat production files that match no mapping as unmapped evidence requiring classification. Ignore generated output, dependencies, secrets, and configured exclusions.
 
 Content hashes are authoritative for synchronization. Commit IDs are informative baselines and must not be the only freshness signal.
-

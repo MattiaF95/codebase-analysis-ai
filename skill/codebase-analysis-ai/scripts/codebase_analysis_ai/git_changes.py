@@ -122,4 +122,3 @@ def ci_event_changes(root: Path, event_name: str, event_path: Path) -> list[Chan
 
 def paths(changes: Sequence[Change]) -> list[str]:
     return [change.path.replace("\\", "/") for change in changes]
-

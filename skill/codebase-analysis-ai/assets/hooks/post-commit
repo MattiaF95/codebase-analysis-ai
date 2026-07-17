@@ -24,4 +24,3 @@ else
   $py "$checker" check --mode post-commit --head HEAD --warn-only
 fi
 exit 0
-

@@ -12,4 +12,3 @@ fi
 
 $py "$checker" check --mode post-merge --base ORIG_HEAD --head HEAD --warn-only
 exit 0
-

@@ -12,4 +12,3 @@
 Preserve canonical filenames exactly: `README.md`, `SKILL.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `LICENSE`, `CHANGELOG.md`, and `CONTRIBUTING.md`.
 
 Validate case-sensitive uniqueness even on case-insensitive filesystems.
-

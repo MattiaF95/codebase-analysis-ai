@@ -37,4 +37,3 @@ def resolve_impact(documentation_map: DocumentationMap, changed_paths: Iterable[
     related.difference_update(direct)
 
     return Impact(tuple(sorted(direct)), tuple(sorted(related)), tuple(sorted(unmapped)))
-

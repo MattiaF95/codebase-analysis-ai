@@ -13,4 +13,3 @@ else
 fi
 
 $py "$checker" check --mode pre-push --read-pre-push-stdin
-

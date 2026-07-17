@@ -35,4 +35,3 @@ jobs:
             --mode ci \
             --event-name "$GITHUB_EVENT_NAME" \
             --event-path "$GITHUB_EVENT_PATH"
-

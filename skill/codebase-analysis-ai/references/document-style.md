@@ -24,6 +24,7 @@ Keep code identifiers, command names, API fields, protocol names, library names,
 - Name the acting component explicitly. Avoid vague subjects such as “it”, “the system”, or “this” when more than one component could be meant.
 - Introduce lists, tables, diagrams, and code blocks with a sentence explaining what the reader should learn from them.
 - Use lists for parallel items, tables for exact comparisons or mappings, and Mermaid diagrams only when relationships, ownership, or event order are materially clearer than prose.
+- Make Mermaid source readable to a human without requiring a rendered preview. Use complete, immediately understandable participant and node names directly in relationships; never replace them with initials, acronyms, abbreviations, or short aliases such as `B` and `H` instead of `Browser` and `Homepage`.
 - Put exact paths, symbols, commands, configuration keys, and endpoints in backticks. Explain their purpose and operational consequence in prose.
 - Prefer concrete examples from the repository over generic examples. Never let an example introduce behavior that the source does not support.
 - Avoid promotional language, filler, unexplained jargon, and paragraphs that merely restate a heading.

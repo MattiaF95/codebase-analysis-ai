@@ -33,4 +33,3 @@ def validate_links(root: Path, markdown_paths: Iterable[str]) -> list[str]:
             if not resolved.exists():
                 errors.append(f"{relative}: broken link: {raw_target}")
     return errors
-

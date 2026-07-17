@@ -13,4 +13,3 @@ Use `docs/_meta/documentation-map.json` as the source-to-document graph.
 Return direct and related impacts separately so the agent can prioritize edits over consistency checks.
 
 Deleted and renamed files require mapping maintenance. New relevant files that match no rule must be reported as unmapped rather than ignored.
-
