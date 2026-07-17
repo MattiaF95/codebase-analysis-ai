@@ -1,6 +1,6 @@
 # Subagent contract
 
-Use one independent analyzer per detected macro-area during `bootstrap`. During `update`, use one existing analyzer for each impacted macro-area; during a targeted `audit`, use one for each selected area; during a full `audit`, use one for every detected area. `migrate` may use existing profiles only for unresolved source ownership or cross-area mapping. All modes must remain read-only for analyzers and must not create agent files outside `bootstrap`.
+Use one independent analyzer per approved, delegable source macro-area during `bootstrap`. During `update`, use one existing analyzer for each approved impacted macro-area; during a targeted `audit`, use one for each approved selected area; during a full `audit`, use one for every approved detected area. `migrate` may use existing profiles only for unresolved source ownership or cross-area mapping. A small or overlapping area may remain parent-only. All modes must remain read-only for analyzers and must not create agent files outside `bootstrap`.
 
 ## Reuse and safety checks
 
@@ -11,7 +11,7 @@ The parent invokes profiles through the active host's native mechanism; this con
 The parent must pass the complete brief directly to each analyzer. Include:
 
 - `area`, allowed repository-relative paths, and excluded paths;
-- evidence questions and the already resolved documentation language;
+- evidence questions, documentation facets, and the already resolved documentation language;
 - read-only and no-recursion rules;
 - the complete output schema below.
 
@@ -58,4 +58,8 @@ Keep the report bounded and documentation-oriented: group closely related findin
 
 Reject a report when it is not valid JSON, names the wrong area, cites paths outside the allowed scope, or provides claims without sources. Retry one malformed report once; after a second failure, record the native invocation failure and perform the same analysis sequentially in the parent.
 
-The parent resolves duplicate flows and terminology, validates cross-area claims against both areas, and alone writes documentation. Do not pass one analyzer's conclusions to another. Initial absence of a profile is never a fallback reason during `bootstrap`: create the native profile first. In later modes, missing or stale profiles are explicit fallback reasons and must be reported.
+The parent resolves duplicate flows and terminology, maps evidence to documentation topics, validates cross-area claims against all relevant areas, and alone writes documentation. Do not pass one analyzer's conclusions to another. Initial absence of a profile is a fallback only after the user-approved delegation plan is recorded and profile creation fails. In later modes, missing or stale profiles are explicit fallback reasons and must be reported.
+
+## Delegation decision
+
+In interactive execution, the parent must always report one of `parent-only`, `selective`, `recommended`, or `all`, explain the decision using area size, independence, overlap, host capability, and expected context cost, and ask whether to proceed. This confirmation is required even when the parent recommends no subagent. A refusal changes delegation only; it must not reduce the documentation scope.

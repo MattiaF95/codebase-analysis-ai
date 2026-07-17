@@ -10,7 +10,7 @@
 
 Are you tired of fragmented, inconsistent, unstructured, or even missing documentation?! Codebase Analysis AI keeps documentation aligned with the codebase through bounded, evidence-based analysis and repeatable checks.
 
-It maps changed source files to the documentation they affect, reviews direct relationships, validates links and metadata, and asks an AI agent to update only what requires interpretation. During a full bootstrap, it also detects repository macro-areas and delegates each one to a dedicated read-only analyzer before the parent agent writes the documentation.
+It maps changed source files to the documentation they affect, reviews direct relationships, validates links and metadata, and asks an AI agent to update only what requires interpretation. During a full bootstrap, it detects source macro-areas and documentation topics, then uses parent-only or approved read-only delegation before the parent agent writes the documentation.
 
 Git, Python, Git hooks, and GitHub Actions provide the deterministic foundation; the agent skill handles evidence collection, orchestration, validation, and writing.
 
@@ -45,14 +45,14 @@ The traversal stops after one relationship level. If source `A` maps to document
 
 ### Full bootstrap orchestration
 
-1. The parent detects adaptive macro-areas from repository evidence.
-2. For the active host only, it creates one project-level analyzer profile per area with explicit read-only permissions and allowed paths.
-3. Independent analyzers review their assigned areas and return bounded JSON reports whose claims include repository sources.
-4. The parent validates paths and evidence, resolves cross-area flows, and alone writes the documentation.
+1. The parent detects source macro-areas and separate documentation topics from repository evidence.
+2. It proposes parent-only or delegated analysis for each area, explains the cost and coverage tradeoff, and asks the user before creating or invoking subagents in interactive execution.
+3. Approved analyzers review bounded source scopes and return JSON reports whose claims include repository sources; small or overlapping areas may remain in the parent.
+4. The parent validates paths and evidence, maps reports to thematic documents, resolves cross-area flows, and alone writes the documentation.
 
 ![Bootstrap macro-area analyzer orchestration](assets/bootstrap-orchestration.png)
 
-Profiles are created only during `bootstrap`. Initial absence triggers native profile creation, not a sequential shortcut. The parent falls back to in-process analysis only after explicit creation, discovery, invocation, timeout, or repeated contract failure.
+Profiles are created only during `bootstrap`, and only for areas approved for delegation. Initial absence is handled according to the approved plan: parent-only analysis is valid, while an approved profile creation or invocation failure triggers a recorded in-process fallback.
 
 ## Modes
 
@@ -83,7 +83,7 @@ After an update, the agent validates the changed documentation, refreshes hashes
 
 ## Agent compatibility
 
-The core workflow remains provider-neutral. During a full bootstrap, the skill detects the active host and creates one project-level, read-only analyzer profile per detected macro-area. It never creates profiles for inactive hosts or at user scope.
+The core workflow remains provider-neutral. During a full bootstrap, the skill detects the active host and creates project-level, read-only analyzer profiles only for areas approved for delegation. Small or overlapping areas may remain in the parent. It never creates profiles for inactive hosts or at user scope.
 
 | Agent | Skill location and invocation | Analyzer profile | Discovery or invocation |
 |---|---|---|---|
@@ -137,7 +137,7 @@ Use explicit requests for operations that create or restructure documentation:
 
 ```text
 Use codebase-analysis-ai in bootstrap mode and create the complete project documentation.
-Detect the macro-areas, create one read-only analyzer per area for the active host, and write the documentation in English.
+Detect the source macro-areas and documentation topics, propose whether to use read-only analyzers, ask for confirmation, and write the documentation in English.
 Use codebase-analysis-ai to update the documentation affected by the current Git changes.
 Use codebase-analysis-ai to audit the existing documentation without modifying files.
 Use codebase-analysis-ai setup to install agent rules, Git hooks, and the GitHub Action.
