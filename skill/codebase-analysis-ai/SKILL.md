@@ -1,6 +1,6 @@
 ---
 name: codebase-analysis-ai
-description: Perform agentic, evidence-based codebase analysis to create, update, migrate, or audit repository documentation covering architecture, code flows, APIs, schemas, security boundaries, configuration, and delivery pipelines. Use after code, configuration, commit, PR, merge, rebase, or pull changes when documentation may need synchronization, or when an explicit documentation review is requested. Default to Git-diff-based incremental analysis and inspect only directly impacted documents and their first-level links. Never scan the entire repository or create documentation from scratch unless the user explicitly requests a full documentation bootstrap. If documentation is missing and bootstrap was not explicit, ask whether to initialize it or stop. Do not use for generic writing, standalone code explanation, or a general code-quality review unrelated to documentation.
+description: Analyze repository evidence to bootstrap, migrate, update, or audit project documentation covering architecture, flows, APIs, schemas, security, configuration, and delivery. Use when creating a complete documentation system, synchronizing existing docs with Git or code changes, adopting unmanaged documentation, checking documentation accuracy, or installing the supporting workflow. Prefer bounded Git-diff analysis for updates; use full-repository analysis only for explicit bootstrap requests. Do not use for generic writing, standalone code explanations, or code-quality reviews.
 ---
 
 # Codebase Analysis AI
