@@ -63,6 +63,33 @@ class SetupStateTest(unittest.TestCase):
             self.assertTrue(all(value == "managed" for value in state["hooks"].values()))
             self.assertEqual("managed", state["githubAction"])
 
+    def test_deleted_mapped_source_is_stale(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            map_path = root / "docs" / "_meta" / "documentation-map.json"
+            map_path.parent.mkdir(parents=True)
+            (root / "docs" / "index.md").write_text("# Docs\n", encoding="utf-8")
+            map_path.write_text(json.dumps({
+                "schemaVersion": 1,
+                "settings": {
+                    "documentationLanguage": "en",
+                    "languageDecisionSource": "user",
+                },
+                "documents": {
+                    "documentation.index": {
+                        "path": "docs/index.md",
+                        "sourcePatterns": ["src/**"],
+                        "sourceHashes": {"src/deleted.py": "old-hash"},
+                        "relatedDocuments": [],
+                    }
+                },
+            }), encoding="utf-8")
+
+            state = inspect_setup(root, ["codex"])
+
+            self.assertEqual("stale", state["documentation"]["state"])
+            self.assertEqual(["src/deleted.py"], state["documentation"]["staleSources"])
+
     def test_cli_returns_json(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

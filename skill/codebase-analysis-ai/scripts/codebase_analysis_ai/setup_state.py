@@ -123,7 +123,7 @@ def inspect_setup(root: Path, agents: list[str]) -> dict[str, object]:
             for document in documentation_map.documents.values():
                 for source_path, recorded in document.get("sourceHashes", {}).items():
                     source = root / source_path
-                    if source.is_file() and sha256_file(source) != recorded:
+                    if sha256_file(source) != recorded:
                         stale.append(source_path)
             docs["state"] = "incoherent" if errors or missing else "stale" if stale else "coherent"
             docs["mapErrors"] = errors
