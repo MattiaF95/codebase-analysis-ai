@@ -8,10 +8,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "skill" / "codebase-analysis-ai" / "scripts"))
 
-from codebase_analysis_ai.git_changes import ZERO_SHA, paths, pre_push_changes  # noqa: E402
+from codebase_analysis_ai.git_changes import Change, ZERO_SHA, paths, pre_push_changes  # noqa: E402
 
 
 class GitChangesTest(unittest.TestCase):
+    def test_rename_exposes_old_and_new_paths_but_copy_exposes_only_destination(self):
+        changes = [
+            Change(path="src/new.py", old_path="src/old.py", status="R"),
+            Change(path="src/copy.py", old_path="src/new.py", status="C"),
+        ]
+
+        self.assertEqual(
+            ["src/old.py", "src/new.py", "src/copy.py"],
+            paths(changes),
+        )
+
     def test_new_branch_push_includes_every_unpublished_commit(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

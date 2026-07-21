@@ -142,4 +142,9 @@ def ci_event_changes(root: Path, event_name: str, event_path: Path) -> list[Chan
 
 
 def paths(changes: Sequence[Change]) -> list[str]:
-    return [change.path.replace("\\", "/") for change in changes]
+    result: list[str] = []
+    for change in changes:
+        if change.status == "R" and change.old_path:
+            result.append(change.old_path.replace("\\", "/"))
+        result.append(change.path.replace("\\", "/"))
+    return list(dict.fromkeys(result))
