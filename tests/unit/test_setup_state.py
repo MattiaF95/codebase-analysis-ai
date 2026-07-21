@@ -90,6 +90,18 @@ class SetupStateTest(unittest.TestCase):
             self.assertEqual("stale", state["documentation"]["state"])
             self.assertEqual(["src/deleted.py"], state["documentation"]["staleSources"])
 
+    def test_reports_managed_hook_without_execute_permission_as_inactive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            install_project_components(root, ["codex"], False, True, False)
+            hook = root / ".githooks" / "post-commit"
+            hook.chmod(0o600)
+
+            state = inspect_setup(root, ["codex"])
+
+            self.assertEqual("inactive", state["hooks"]["post-commit"])
+
     def test_cli_returns_json(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

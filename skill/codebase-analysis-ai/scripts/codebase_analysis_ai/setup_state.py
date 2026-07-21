@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import stat
 from pathlib import Path
 
 from .documentation_map import MapError, load_map
@@ -29,6 +30,13 @@ def _file_state(path: Path, expected: str | None = None) -> str:
     if MANAGED not in content:
         return "unmanaged"
     return "outdated" if expected is not None and content != expected else "managed"
+
+
+def _hook_state(path: Path, expected: str | None = None) -> str:
+    state = _file_state(path, expected)
+    if state == "managed" and not path.stat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+        return "inactive"
+    return state
 
 
 def _adapter_state(path: Path, agent: str, expected_block: str | None = None) -> str:
@@ -95,7 +103,7 @@ def inspect_setup(root: Path, agents: list[str]) -> dict[str, object]:
     }
 
     hooks = {
-        name: _file_state(
+        name: _hook_state(
             root / ".githooks" / name,
             (assets / "hooks" / name).read_text(encoding="utf-8") if has_assets else None,
         )

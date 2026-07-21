@@ -10,7 +10,7 @@ The deterministic checker never invokes an AI model.
 
 ## Initial automation proposal
 
-After `setup-state`, always include automation in the single initial contract. For the runtime, each active-host adapter, every required hook, and the GitHub Action, report one proposed action: `create`, `refresh`, `keep`, or `resolve conflict`. Missing components must be proposed as `create`, outdated managed components as `refresh`, current managed components as `keep`, and unmanaged collisions as `resolve conflict`. Briefly explain the operational effect and ask for confirmation once for the complete contract.
+After `setup-state`, always include automation in the single initial contract. For the runtime, each active-host adapter, every required hook, and the GitHub Action, report one proposed action: `create`, `refresh`, `repair permissions`, `keep`, or `resolve conflict`. Missing components must be proposed as `create`, outdated managed components as `refresh`, inactive managed hooks as `repair permissions`, current managed components as `keep`, and unmanaged collisions as `resolve conflict`. Briefly explain the operational effect and ask for confirmation once for the complete contract.
 
 Missing managed components must be created and outdated managed components refreshed after setup confirmation. Unmanaged or conflicting files must not be overwritten; identify the exact path and stop setup for that component.
 
@@ -29,7 +29,7 @@ Every hook invokes the checker with `--json`. When an agent runs a Git command a
 
 The agent may rerun `post-commit` with `python tools/codebase-analysis-ai/check.py check --mode post-commit --base HEAD^ --head HEAD --json` while `HEAD` is unchanged. For `pre-push`, `post-merge`, and `post-rewrite`, use the captured report because their original stdin or refs may no longer be reproducible. Do not continue with another Git operation until the relevant result is clean or the user explicitly accepts a warning-only result. Hook output is never irrelevant: warnings require analysis, and a failing `pre-push` blocks publication.
 
-Store exactly these hooks under `.githooks`: `post-commit`, `pre-push`, `post-merge`, and `post-rewrite`. Configure the local clone with `git config core.hooksPath .githooks`. Create `.githooks` and each missing hook after confirmation, and refresh outdated hooks only when they retain the managed marker. If `core.hooksPath` points to a missing path, treat it as stale and repair it; if it points to an existing different path, stop on conflict. Do not create or modify other hooks.
+Store exactly these hooks under `.githooks`: `post-commit`, `pre-push`, `post-merge`, and `post-rewrite`. Configure the local clone with `git config core.hooksPath .githooks`. Create `.githooks` and each missing hook after confirmation, refresh outdated hooks only when they retain the managed marker, and restore execute permission on inactive managed hooks. If `core.hooksPath` points to a missing path, treat it as stale and repair it; if it points to an existing different path, stop on conflict. Do not create or modify other hooks.
 
 ## GitHub Action
 

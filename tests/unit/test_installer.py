@@ -128,6 +128,19 @@ class InstallerTest(unittest.TestCase):
                 check=True, text=True, stdout=subprocess.PIPE,
             ).stdout.strip())
 
+    def test_current_managed_hook_permissions_are_repaired(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            install_project_components(root, ["codex"], False, True, False)
+            hook = root / ".githooks" / "pre-push"
+            hook.chmod(0o600)
+
+            changes = install_project_components(root, ["codex"], False, True, False)
+
+            self.assertNotEqual(0, hook.stat().st_mode & 0o111)
+            self.assertIn(".githooks/pre-push", changes)
+
 
 if __name__ == "__main__":
     unittest.main()

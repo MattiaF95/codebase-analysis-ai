@@ -179,7 +179,8 @@ def install_project_components(
         for hook_name in ("post-commit", "pre-push", "post-merge", "post-rewrite"):
             target = hook_dir / hook_name
             action = _copy_managed_file(assets / "hooks" / hook_name, target)
-            if action:
+            executable = bool(target.stat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
+            if action or not executable:
                 target.chmod(target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                 changes.append(f".githooks/{hook_name}")
         if (project_root / ".git").exists() and not hooks_path:
