@@ -102,6 +102,20 @@ class SetupStateTest(unittest.TestCase):
 
             self.assertEqual("inactive", state["hooks"]["post-commit"])
 
+    def test_reports_structured_documentation_map_diagnostics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            map_path = root / "docs" / "_meta" / "documentation-map.json"
+            map_path.parent.mkdir(parents=True)
+            map_path.write_text("{invalid json", encoding="utf-8")
+
+            documentation = inspect_setup(root, ["codex"])["documentation"]
+
+            self.assertEqual("incoherent", documentation["state"])
+            self.assertEqual("documentation-map-invalid", documentation["errors"][0]["code"])
+            self.assertEqual("docs/_meta/documentation-map.json", documentation["errors"][0]["path"])
+            self.assertTrue(documentation["errors"][0]["message"])
+
     def test_reports_modified_managed_hook_and_workflow_as_outdated(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

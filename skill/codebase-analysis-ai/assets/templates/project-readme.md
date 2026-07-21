@@ -2,7 +2,9 @@
 
 ## What this README covers
 
+<!-- codebase-analysis-ai:scope:start -->
 {{ readmeCoverage }}
+<!-- codebase-analysis-ai:scope:end -->
 
 ## Project status
 

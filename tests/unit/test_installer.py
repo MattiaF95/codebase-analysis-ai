@@ -3,11 +3,13 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "skill" / "codebase-analysis-ai" / "scripts"))
 
+from codebase_analysis_ai import project_installer  # noqa: E402
 from codebase_analysis_ai.project_installer import START, update_managed_block, install_project_components  # noqa: E402
 
 
@@ -172,6 +174,34 @@ class InstallerTest(unittest.TestCase):
                     install_project_components(root, agents, with_agents, with_hooks, with_action)
 
                 self.assertFalse((root / "tools" / "codebase-analysis-ai").exists())
+
+    def test_failure_rolls_back_files_permissions_and_git_configuration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "core.hooksPath", "missing-hooks"], check=True)
+            agents = root / "AGENTS.md"
+            agents.write_text("# Manual rules\n", encoding="utf-8")
+            original_copy = project_installer._copy_managed_file
+
+            def fail_on_workflow(source, target, replacements=None):
+                if target.name == "codebase-analysis-ai.yml":
+                    raise OSError("injected write failure")
+                return original_copy(source, target, replacements)
+
+            with mock.patch.object(project_installer, "_copy_managed_file", side_effect=fail_on_workflow):
+                with self.assertRaisesRegex(OSError, "injected write failure"):
+                    install_project_components(root, ["codex"], True, True, True)
+
+            self.assertEqual("# Manual rules\n", agents.read_text(encoding="utf-8"))
+            self.assertFalse((root / "tools").exists())
+            self.assertFalse((root / ".githooks").exists())
+            self.assertFalse((root / ".github").exists())
+            configured = subprocess.run(
+                ["git", "-C", str(root), "config", "--local", "--get", "core.hooksPath"],
+                check=True, text=True, stdout=subprocess.PIPE,
+            ).stdout.strip()
+            self.assertEqual("missing-hooks", configured)
 
 
 if __name__ == "__main__":

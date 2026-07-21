@@ -10,6 +10,7 @@ from pathlib import Path
 
 from codebase_analysis_ai.documentation_map import MapError, load_map
 from codebase_analysis_ai.documentation_preflight import first_documentation_file
+from codebase_analysis_ai.document_validator import validate_documents
 from codebase_analysis_ai.git_changes import (
     Change,
     ci_event_changes,
@@ -146,6 +147,12 @@ def command_todos(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_validate_docs(args: argparse.Namespace) -> int:
+    report = validate_documents(_root(args.root), args.paths)
+    print(json.dumps(report, indent=2))
+    return 1 if args.strict and not report["valid"] else 0
+
+
 def command_install(args: argparse.Namespace) -> int:
     root = _root(args.root)
     agents = ["codex", "claude", "gemini", "copilot"] if "all" in args.agents else args.agents
@@ -196,6 +203,13 @@ def build_parser() -> argparse.ArgumentParser:
     todos = subparsers.add_parser("todos", help="Scan selected files for TODO evidence")
     todos.add_argument("paths", nargs="+")
     todos.set_defaults(handler=command_todos)
+
+    validate_docs = subparsers.add_parser(
+        "validate-docs", help="Validate generated-document contracts without changing files"
+    )
+    validate_docs.add_argument("paths", nargs="*")
+    validate_docs.add_argument("--strict", action="store_true", help="Return a failure status when issues are found")
+    validate_docs.set_defaults(handler=command_validate_docs)
 
     install = subparsers.add_parser("install", help="Install project automation components")
     install.add_argument("--agents", nargs="+", default=["codex"], choices=["codex", "claude", "gemini", "copilot", "all"])

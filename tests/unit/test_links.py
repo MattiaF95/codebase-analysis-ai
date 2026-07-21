@@ -27,7 +27,38 @@ class LinkValidatorTest(unittest.TestCase):
             errors = validate_links(root, ["docs/source.md"])
             self.assertEqual(1, len(errors))
 
+    def test_supports_reference_links_nested_parentheses_and_unicode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            docs = root / "docs"
+            docs.mkdir()
+            (docs / "flusso (utente).md").write_text("# Target\n", encoding="utf-8")
+            (docs / "source.md").write_text(
+                "[Flusso][utente]\n[Diretto](flusso%20(utente).md)\n\n"
+                "[utente]: <flusso%20(utente).md>\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual([], validate_links(root, ["docs/source.md"]))
+
+    def test_ignores_links_in_code_and_images_but_validates_reference_targets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            docs = root / "docs"
+            docs.mkdir()
+            (docs / "source.md").write_text(
+                "`[inline](missing-inline.md)`\n"
+                "```markdown\n[fenced](missing-fenced.md)\n```\n"
+                "![image](missing-image.png)\n"
+                "[Missing][reference]\n\n[reference]: missing-reference.md\n",
+                encoding="utf-8",
+            )
+
+            errors = validate_links(root, ["docs/source.md"])
+
+            self.assertEqual(1, len(errors))
+            self.assertIn("missing-reference.md", errors[0])
+
 
 if __name__ == "__main__":
     unittest.main()
-

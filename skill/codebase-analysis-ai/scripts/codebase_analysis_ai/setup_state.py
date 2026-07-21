@@ -137,8 +137,24 @@ def inspect_setup(root: Path, agents: list[str]) -> dict[str, object]:
             docs["mapErrors"] = errors
             docs["missingDocuments"] = missing
             docs["staleSources"] = sorted(set(stale))
-        except (MapError, OSError, ValueError):
+            if errors:
+                docs["errors"] = [
+                    {
+                        "code": "documentation-map-invalid",
+                        "path": "docs/_meta/documentation-map.json",
+                        "message": error,
+                        "recoverable": True,
+                    }
+                    for error in errors
+                ]
+        except (MapError, OSError, ValueError) as exc:
             docs["state"] = "incoherent"
+            docs["errors"] = [{
+                "code": "documentation-map-unreadable" if isinstance(exc, OSError) else "documentation-map-invalid",
+                "path": "docs/_meta/documentation-map.json",
+                "message": str(exc),
+                "recoverable": True,
+            }]
     elif first_doc is not None:
         docs["state"] = "not-indexed"
 

@@ -61,6 +61,12 @@ Assign exactly one severity: `critical` (immediate severe impact or unsafe publi
 Use this structure for every finding:
 
 ```markdown
+<!-- codebase-analysis-ai:finding {"kind":"bug","severity":"high","verification":"test"} -->
+```
+
+Place this machine-readable marker immediately before the finding. Keep `kind`, `severity`, and `verification` in the stable English taxonomy even when the visible prose is localized. The marker is additive metadata and does not replace the explanatory text below it.
+
+```markdown
 ### [medium][reliability] Short problem statement
 
 - Evidenza: `repository-relative/path:line` or test/command result.

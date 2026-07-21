@@ -2,7 +2,9 @@
 
 ## What this document covers
 
+<!-- codebase-analysis-ai:scope:start -->
 {{ documentCoverage }}
+<!-- codebase-analysis-ai:scope:end -->
 
 ## Context
 

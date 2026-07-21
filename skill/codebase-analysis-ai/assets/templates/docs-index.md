@@ -2,7 +2,9 @@
 
 ## What this index covers
 
+<!-- codebase-analysis-ai:scope:start -->
 {{ indexCoverage }}
+<!-- codebase-analysis-ai:scope:end -->
 
 ## Getting started
 
