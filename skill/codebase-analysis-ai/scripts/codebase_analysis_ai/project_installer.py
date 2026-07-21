@@ -76,14 +76,32 @@ def _copy_managed_file(source: Path, target: Path, replacements: dict[str, str] 
     return action
 
 
-def _ensure_managed_file(source: Path, target: Path, replacements: dict[str, str] | None = None) -> str | None:
-    """Create a managed file when absent; preserve every existing file."""
-    if target.exists():
-        existing = target.read_text(encoding="utf-8", errors="replace")
-        if MANAGED not in existing:
-            raise InstallConflict(f"Refusing to overwrite unmanaged file: {target}")
-        return None
-    return _copy_managed_file(source, target, replacements)
+def _preflight_runtime(project_root: Path) -> None:
+    check = project_root / "tools" / "codebase-analysis-ai" / "check.py"
+    if check.exists() and (
+        not check.is_file()
+        or RUNTIME_MARKER not in check.read_text(encoding="utf-8", errors="replace")
+    ):
+        raise InstallConflict(f"Refusing to overwrite unmanaged runtime: {check}")
+
+
+def _preflight_agent_file(target: Path) -> None:
+    if not target.exists():
+        return
+    if not target.is_file():
+        raise InstallConflict(f"Refusing to modify non-file agent target: {target}")
+    content = target.read_text(encoding="utf-8", errors="replace")
+    if (START in content) != (END in content):
+        raise InstallConflict(f"Refusing to modify incomplete managed block: {target}")
+
+
+def _preflight_managed_file(target: Path) -> None:
+    if not target.exists():
+        return
+    if not target.is_file():
+        raise InstallConflict(f"Refusing to overwrite non-file target: {target}")
+    if MANAGED not in target.read_text(encoding="utf-8", errors="replace"):
+        raise InstallConflict(f"Refusing to overwrite unmanaged file: {target}")
 
 
 def _copy_runtime(project_root: Path) -> list[str]:
@@ -134,6 +152,16 @@ def install_project_components(
 ) -> list[str]:
     project_root = project_root.resolve()
     assets = skill_root() / "assets"
+    agent_targets = {
+        "codex": ("AGENTS.md", "AGENTS.md"),
+        "claude": ("CLAUDE.md", "CLAUDE.md"),
+        "gemini": ("GEMINI.md", "GEMINI.md"),
+        "copilot": ("copilot-instructions.md", ".github/copilot-instructions.md"),
+    }
+    requested_agents = list(dict.fromkeys(agents))
+    unknown_agents = [agent for agent in requested_agents if agent not in agent_targets]
+    if unknown_agents:
+        raise InstallConflict(f"Unknown agent targets: {', '.join(unknown_agents)}")
 
     hooks_path = ""
     if with_hooks and (project_root / ".git").exists():
@@ -158,16 +186,21 @@ def install_project_components(
             # .githooks and replace the unusable local configuration below.
             hooks_path = ""
 
+    _preflight_runtime(project_root)
+    if with_agent_rules:
+        for agent in requested_agents:
+            _template_name, target_name = agent_targets[agent]
+            _preflight_agent_file(project_root / target_name)
+    if with_hooks:
+        for hook_name in ("post-commit", "pre-push", "post-merge", "post-rewrite"):
+            _preflight_managed_file(project_root / ".githooks" / hook_name)
+    if with_github_action:
+        _preflight_managed_file(project_root / ".github" / "workflows" / "codebase-analysis-ai.yml")
+
     changes = _copy_runtime(project_root)
 
-    agent_targets = {
-        "codex": ("AGENTS.md", "AGENTS.md"),
-        "claude": ("CLAUDE.md", "CLAUDE.md"),
-        "gemini": ("GEMINI.md", "GEMINI.md"),
-        "copilot": ("copilot-instructions.md", ".github/copilot-instructions.md"),
-    }
     if with_agent_rules:
-        for agent in dict.fromkeys(agents):
+        for agent in requested_agents:
             template_name, target_name = agent_targets[agent]
             block = (assets / "adapters" / template_name).read_text(encoding="utf-8")
             action = append_managed_block_if_missing(project_root / target_name, block)

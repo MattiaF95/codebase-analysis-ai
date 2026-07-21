@@ -141,6 +141,38 @@ class InstallerTest(unittest.TestCase):
             self.assertNotEqual(0, hook.stat().st_mode & 0o111)
             self.assertIn(".githooks/pre-push", changes)
 
+    def test_conflicting_targets_stop_before_runtime_is_created(self):
+        cases = {
+            "unmanaged hook": (".githooks/pre-push", "#!/bin/sh\ncustom\n", ["codex"], False, True, False),
+            "unmanaged workflow": (
+                ".github/workflows/codebase-analysis-ai.yml",
+                "name: custom\n",
+                ["codex"],
+                False,
+                False,
+                True,
+            ),
+            "incomplete agent block": (
+                "AGENTS.md",
+                f"{START}\nincomplete\n",
+                ["codex"],
+                True,
+                False,
+                False,
+            ),
+        }
+        for label, (relative, content, agents, with_agents, with_hooks, with_action) in cases.items():
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+
+                with self.assertRaises(RuntimeError):
+                    install_project_components(root, agents, with_agents, with_hooks, with_action)
+
+                self.assertFalse((root / "tools" / "codebase-analysis-ai").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

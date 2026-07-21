@@ -13,7 +13,7 @@ Use setup mode after an explicit setup request or after the user confirms a setu
    `python <installed-skill-root>/scripts/codebase_analysis_ai.py --root . install --agents <active-host>`
 
    The command creates missing components and refreshes outdated managed components. It never replaces unmanaged runtime, hooks, workflows, agent instructions, or unrelated automation.
-6. Stop on unrecognized hook or workflow conflicts and request a revised plan. Do not invent chaining or framework integration without repository evidence.
+6. Preflight runtime ownership, every selected agent target, every hook, the workflow, and `core.hooksPath` before the first setup write. Stop on any unrecognized conflict and request a revised plan. Do not invent chaining or framework integration without repository evidence.
 7. Run the deterministic checker and installer tests.
 8. Report every created, refreshed, retained, or conflicted component and any local-only Git configuration. Do not classify agent rule files or installed automation as project documentation.
 
