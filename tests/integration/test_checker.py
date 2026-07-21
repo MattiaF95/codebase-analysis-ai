@@ -16,6 +16,31 @@ def run(*args, cwd):
 
 
 class CheckerIntegrationTest(unittest.TestCase):
+    def test_malformed_map_returns_clean_error_without_traceback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            run("git", "init", "-b", "main", cwd=project)
+            (project / "docs" / "_meta").mkdir(parents=True)
+            (project / "docs" / "_meta" / "documentation-map.json").write_text(
+                json.dumps({"schemaVersion": 1, "settings": [], "documents": ["invalid"]}),
+                encoding="utf-8",
+            )
+
+            result = run(
+                sys.executable,
+                str(CLI),
+                "--root",
+                str(project),
+                "check",
+                "--mode",
+                "working-tree",
+                cwd=project,
+            )
+
+            self.assertEqual(2, result.returncode)
+            self.assertIn("Invalid documentation map", result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+
     def test_detects_and_refreshes_stale_source(self):
         with tempfile.TemporaryDirectory() as directory:
             project = Path(directory)
@@ -59,4 +84,3 @@ class CheckerIntegrationTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

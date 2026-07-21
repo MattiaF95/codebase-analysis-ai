@@ -67,6 +67,39 @@ class MapError(RuntimeError):
     pass
 
 
+def _structure_errors(data: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    settings = data.get("settings", {})
+    if not isinstance(settings, dict):
+        errors.append("settings must be an object")
+    else:
+        for key in ("ignorePatterns", "auditOnlyPatterns"):
+            value = settings.get(key, [])
+            if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+                errors.append(f"settings.{key} must be a string array")
+    documents = data.get("documents", {})
+    if not isinstance(documents, dict):
+        errors.append("documents must be an object")
+        return errors
+    for doc_id, document in documents.items():
+        if not isinstance(doc_id, str) or not doc_id:
+            errors.append("document IDs must be non-empty strings")
+            continue
+        if not isinstance(document, dict):
+            errors.append(f"{doc_id}: document must be an object")
+            continue
+        source_hashes = document.get("sourceHashes", {})
+        if not isinstance(source_hashes, dict) or not all(
+            isinstance(path, str) and isinstance(digest, str) for path, digest in source_hashes.items()
+        ):
+            errors.append(f"{doc_id}: sourceHashes must be a string map")
+        for key in ("sourcePatterns", "relatedDocuments"):
+            value = document.get(key, [])
+            if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+                errors.append(f"{doc_id}: {key} must be a string array")
+    return errors
+
+
 @dataclass
 class DocumentationMap:
     path: Path
@@ -74,11 +107,13 @@ class DocumentationMap:
 
     @property
     def documents(self) -> dict[str, dict[str, Any]]:
-        return self.data.setdefault("documents", {})
+        documents = self.data.setdefault("documents", {})
+        return documents if isinstance(documents, dict) else {}
 
     @property
     def settings(self) -> dict[str, Any]:
-        return self.data.setdefault("settings", {})
+        settings = self.data.setdefault("settings", {})
+        return settings if isinstance(settings, dict) else {}
 
     @property
     def taxonomy(self) -> dict[str, Any]:
@@ -90,7 +125,7 @@ class DocumentationMap:
         self.path.write_text(json.dumps(self.data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     def validate(self) -> list[str]:
-        errors: list[str] = []
+        errors = _structure_errors(self.data)
         if self.data.get("schemaVersion") != 1:
             errors.append("documentation-map.json must use schemaVersion 1")
         language = self.settings.get("documentationLanguage")
@@ -213,6 +248,9 @@ def load_map(root: Path) -> DocumentationMap:
         raise MapError(f"Cannot read documentation map: {exc}") from exc
     if not isinstance(data, dict):
         raise MapError("documentation-map.json must contain a JSON object")
+    structure_errors = _structure_errors(data)
+    if structure_errors:
+        raise MapError("Invalid documentation map: " + "; ".join(structure_errors))
     return DocumentationMap(path=path, data=data)
 
 
