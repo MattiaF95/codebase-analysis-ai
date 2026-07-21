@@ -19,9 +19,9 @@ After changing application behavior, APIs, schemas, security, configuration, dep
 When any `git` command starts an output-producing hook, reports a hook failure, or returns a non-zero hook status:
 
 1. Stop immediately. Do not continue with commit, push, merge, rebase, amend, or any other Git operation.
-2. Read and preserve the complete hook output, identify the hook name and exit status, then run exactly:
-   `python tools/codebase-analysis-ai/check.py check --mode working-tree --json`
-3. Analyze the command output and the hook output, fix or report the cause, and only resume the interrupted Git flow after the check is clean or the user explicitly accepts a warning-only result.
+2. Read and preserve the complete JSON report emitted by the hook, including `mode`, `changedFiles`, stale mappings, unmapped files, link errors, and exit status. This report is the authoritative context; never replace it with a `working-tree` check.
+3. For `post-commit`, rerun only when needed with exactly `python tools/codebase-analysis-ai/check.py check --mode post-commit --base HEAD^ --head HEAD --json`. For `pre-push`, `post-merge`, and `post-rewrite`, analyze the captured hook report because their original stdin or refs may no longer be reproducible.
+4. Fix or report the cause, and only resume the interrupted Git flow after the relevant check is clean or the user explicitly accepts a warning-only result.
 
 Never classify hook output as irrelevant. A `post-commit` warning still requires analysis; a failing `pre-push` is a publication block.
 <!-- codebase-analysis-ai:end -->

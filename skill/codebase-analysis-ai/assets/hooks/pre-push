@@ -12,4 +12,4 @@ else
   exit 1
 fi
 
-$py "$checker" check --mode pre-push --read-pre-push-stdin
+$py "$checker" check --mode pre-push --read-pre-push-stdin --json

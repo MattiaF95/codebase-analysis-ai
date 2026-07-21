@@ -19,8 +19,8 @@ else
 fi
 
 if [ -n "$base" ]; then
-  $py "$checker" check --mode post-commit --base "$base" --head HEAD --warn-only
+  $py "$checker" check --mode post-commit --base "$base" --head HEAD --json --warn-only
 else
-  $py "$checker" check --mode post-commit --head HEAD --warn-only
+  $py "$checker" check --mode post-commit --head HEAD --json --warn-only
 fi
 exit 0

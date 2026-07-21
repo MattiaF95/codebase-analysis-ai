@@ -10,5 +10,5 @@ elif command -v py >/dev/null 2>&1; then py="py -3"
 else exit 0
 fi
 
-$py "$checker" check --mode post-merge --base ORIG_HEAD --head HEAD --warn-only
+$py "$checker" check --mode post-merge --base ORIG_HEAD --head HEAD --json --warn-only
 exit 0
