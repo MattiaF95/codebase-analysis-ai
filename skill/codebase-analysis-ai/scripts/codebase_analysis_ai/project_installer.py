@@ -39,14 +39,18 @@ def update_managed_block(target: Path, block: str) -> str:
 
 
 def append_managed_block_if_missing(target: Path, block: str) -> str | None:
-    """Append an agent block only when it is not already present.
-
-    Existing agent instructions, including an older managed block, are never
-    rewritten by setup.
-    """
+    """Create or refresh the managed agent block without touching manual text."""
     existing = target.read_text(encoding="utf-8") if target.exists() else ""
+    if START in existing and END in existing:
+        before, remainder = existing.split(START, 1)
+        _old, after = remainder.split(END, 1)
+        updated = before.rstrip() + "\n\n" + block.strip() + "\n" + after.lstrip("\n")
+        if updated == existing:
+            return None
+        target.write_text(updated, encoding="utf-8")
+        return "updated"
     if START in existing:
-        return None
+        raise InstallConflict(f"Refusing to modify incomplete managed block: {target}")
     separator = "\n\n" if existing.strip() else ""
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(existing.rstrip() + separator + block.strip() + "\n", encoding="utf-8")
@@ -141,7 +145,14 @@ def install_project_components(
         if configured.returncode not in (0, 1):
             raise InstallConflict(configured.stderr.strip() or "Could not inspect core.hooksPath")
         if hooks_path and hooks_path != ".githooks":
-            raise InstallConflict(f"Refusing to replace existing core.hooksPath: {hooks_path}")
+            configured_path = Path(hooks_path)
+            if not configured_path.is_absolute():
+                configured_path = project_root / configured_path
+            if configured_path.exists():
+                raise InstallConflict(f"Refusing to replace existing core.hooksPath: {hooks_path}")
+            # A stale path must not prevent setup. The installer will create
+            # .githooks and replace the unusable local configuration below.
+            hooks_path = ""
 
     changes = _copy_runtime(project_root)
 

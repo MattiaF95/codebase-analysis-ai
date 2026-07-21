@@ -55,6 +55,24 @@ class InstallerTest(unittest.TestCase):
             install_project_components(root, ["codex"], True, False, False)
             self.assertEqual(first, target.read_text(encoding="utf-8"))
 
+    def test_existing_managed_agent_block_is_refreshed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "AGENTS.md"
+            target.write_text(
+                "# Existing\n\n<!-- codebase-analysis-ai:start -->\nold rule\n"
+                "<!-- codebase-analysis-ai:end -->\n\n# Manual\n",
+                encoding="utf-8",
+            )
+
+            install_project_components(root, ["codex"], True, False, False)
+
+            content = target.read_text(encoding="utf-8")
+            self.assertIn("# Existing", content)
+            self.assertIn("# Manual", content)
+            self.assertIn("Hook interruption protocol", content)
+            self.assertNotIn("old rule", content)
+
     def test_existing_runtime_is_preserved(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -73,11 +91,26 @@ class InstallerTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             subprocess.run(["git", "init", "-q", str(root)], check=True)
+            (root / "custom-hooks").mkdir()
             subprocess.run(["git", "-C", str(root), "config", "core.hooksPath", "custom-hooks"], check=True)
 
             with self.assertRaisesRegex(RuntimeError, "core.hooksPath"):
                 install_project_components(root, ["codex"], False, True, False)
             self.assertFalse((root / "tools" / "codebase-analysis-ai").exists())
+
+    def test_missing_githooks_and_stale_hooks_path_are_repaired(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "core.hooksPath", "missing-hooks"], check=True)
+
+            install_project_components(root, ["codex"], False, True, False)
+
+            self.assertTrue((root / ".githooks" / "pre-push").is_file())
+            self.assertEqual(".githooks", subprocess.run(
+                ["git", "-C", str(root), "config", "--get", "core.hooksPath"],
+                check=True, text=True, stdout=subprocess.PIPE,
+            ).stdout.strip())
 
 
 if __name__ == "__main__":

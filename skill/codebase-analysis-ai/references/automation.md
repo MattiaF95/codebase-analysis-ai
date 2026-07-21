@@ -16,7 +16,7 @@ Missing managed components must be created after setup confirmation. Existing ag
 
 ## Agent rules
 
-Install a managed block in the instruction file for each selected host. Do not duplicate the skill body. Preserve unrelated instructions.
+Install or refresh the managed block in the instruction file for each selected host. Do not duplicate the skill body. Preserve unrelated instructions.
 
 ## Hooks
 
@@ -25,7 +25,13 @@ Install a managed block in the instruction file for each selected host. Do not d
 - `post-merge`: warn after merge-based pulls.
 - `post-rewrite`: warn after rebase, amend, or pull with rebase.
 
-Store exactly these hooks under `.githooks`: `post-commit`, `pre-push`, `post-merge`, and `post-rewrite`. Configure the local clone with `git config core.hooksPath .githooks`. Create each missing hook after confirmation. Preserve every existing hook unchanged and stop if the dedicated path is an unmanaged conflict. Do not create or modify other hooks.
+When an agent runs a Git command and any hook produces output or a non-zero status, the agent must stop the Git flow, preserve and analyze the complete output, and run:
+
+`python tools/codebase-analysis-ai/check.py check --mode working-tree --json`
+
+The agent must not continue with another Git operation until the result is clean or the user explicitly accepts a warning-only result. Hook output is never irrelevant: warnings require analysis, and a failing `pre-push` blocks publication.
+
+Store exactly these hooks under `.githooks`: `post-commit`, `pre-push`, `post-merge`, and `post-rewrite`. Configure the local clone with `git config core.hooksPath .githooks`. Create `.githooks` and each missing hook after confirmation. If `core.hooksPath` points to a missing path, treat it as stale and repair it; if it points to an existing different path, stop on conflict. Preserve every existing hook unchanged and do not create or modify other hooks.
 
 ## GitHub Action
 

@@ -13,4 +13,15 @@ After changing application behavior, APIs, schemas, security, configuration, dep
 8. If `docs/` does not exist and bootstrap was not explicit, ask whether to initialize documentation or stop.
 9. Do not invent active functionality, TODOs, commands, dependencies, or architectural relationships.
 10. Preserve manual content outside managed sections.
+
+## Hook interruption protocol
+
+When any `git` command starts an output-producing hook, reports a hook failure, or returns a non-zero hook status:
+
+1. Stop immediately. Do not continue with commit, push, merge, rebase, amend, or any other Git operation.
+2. Read and preserve the complete hook output, identify the hook name and exit status, then run exactly:
+   `python tools/codebase-analysis-ai/check.py check --mode working-tree --json`
+3. Analyze the command output and the hook output, fix or report the cause, and only resume the interrupted Git flow after the check is clean or the user explicitly accepts a warning-only result.
+
+Never classify hook output as irrelevant. A `post-commit` warning still requires analysis; a failing `pre-push` is a publication block.
 <!-- codebase-analysis-ai:end -->
