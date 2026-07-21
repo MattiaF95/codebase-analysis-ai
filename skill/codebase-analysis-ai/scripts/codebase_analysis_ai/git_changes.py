@@ -72,6 +72,25 @@ def range_changes(root: Path, base: str | None, head: str = "HEAD") -> list[Chan
     return _parse_name_status(output)
 
 
+def new_ref_changes(root: Path, head: str) -> list[Change]:
+    """Collect every commit introduced by a ref that does not yet exist remotely."""
+    commits = run_git(root, "rev-list", "--reverse", head, "--not", "--remotes").splitlines()
+    changes: list[Change] = []
+    for commit in commits:
+        output = run_git(
+            root,
+            "diff-tree",
+            "--root",
+            "--no-commit-id",
+            "--name-status",
+            "--find-renames",
+            "-r",
+            commit,
+        )
+        changes.extend(_parse_name_status(output))
+    return _deduplicate(changes)
+
+
 def working_tree_changes(root: Path) -> list[Change]:
     changes: list[Change] = []
     changes.extend(_parse_name_status(run_git(root, "diff", "--name-status", "--find-renames", "HEAD")))
@@ -91,8 +110,10 @@ def pre_push_changes(root: Path, lines: Iterable[str]) -> list[Change]:
         _local_ref, local_oid, _remote_ref, remote_oid = parts
         if local_oid == ZERO_SHA:
             continue
-        base = None if remote_oid == ZERO_SHA else remote_oid
-        changes.extend(range_changes(root, base, local_oid))
+        if remote_oid == ZERO_SHA:
+            changes.extend(new_ref_changes(root, local_oid))
+        else:
+            changes.extend(range_changes(root, remote_oid, local_oid))
     return _deduplicate(changes)
 
 
@@ -112,7 +133,7 @@ def ci_event_changes(root: Path, event_name: str, event_path: Path) -> list[Chan
     if event_name == "push":
         base = event.get("before")
         if not base or base == ZERO_SHA:
-            base = None
+            return new_ref_changes(root, event.get("after", "HEAD"))
         return range_changes(root, base, event.get("after", "HEAD"))
     if event_name == "merge_group":
         group = event["merge_group"]

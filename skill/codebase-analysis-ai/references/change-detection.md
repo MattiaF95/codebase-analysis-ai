@@ -16,4 +16,6 @@ For CI, read the event payload:
 
 Handle add, modify, delete, rename, and copy statuses. Treat production files that match no mapping as unmapped evidence requiring classification. Ignore generated output, dependencies, secrets, and configured exclusions.
 
+For the first push of a new ref, inspect every commit reachable from the pushed tip that is not already reachable from a remote ref. Never reduce a multi-commit branch to the tip commit alone.
+
 Content hashes are authoritative for synchronization. Commit IDs are informative baselines and must not be the only freshness signal.
