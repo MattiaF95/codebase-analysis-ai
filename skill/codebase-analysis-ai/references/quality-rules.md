@@ -6,6 +6,11 @@
 - Keep the selected language consistent across new documents and changed sections.
 - Verify that uncommon, ambiguous, and domain-specific acronyms are expanded or explained at first meaningful use.
 - Prefer direct sentences, explicit component names, and context before implementation detail. Use the space required to explain behavior, rationale, contracts, edge cases, and failure modes.
+- Reject skeletal documentation that only inventories files, classes, endpoints, or steps. Each important behavior must include a plain-language narrative covering trigger, sequence, decisions, state or data changes, outcome, and relevant failure paths.
+- Treat diagrams, tables, and lists as supplements to prose; a reader must be able to understand the flow from the surrounding explanation without interpreting the diagram alone.
+- Keep the opening scope section to one short paragraph of one or two lines, no more than two short sentences and 35 words, and make it state immediately what the document contains.
+- Put every supported problem, limitation, inconsistency, or meaningful uncertainty in a `Problemi rilevati` section. Classify it with one finding type (`bug`, `security`, `reliability`, `maintainability`, `coverage-gap`, or `documentation`) and one severity (`critical`, `high`, `medium`, `low`, or `info`).
+- Each finding must include evidence, observed behavior, impact, confidence, verification level, and a concrete recommended action. Do not call an inference a bug, and state explicitly when no problems were detected within the verified scope.
 - Preserve exact technical identifiers and repository terminology while explaining their role in plain language.
 - Confirm that a reader unfamiliar with the repository can understand what the documented area does, where it is implemented, its main flow, dependencies, active behavior, and limitations.
 - Never expose secrets or copy sensitive configuration values.

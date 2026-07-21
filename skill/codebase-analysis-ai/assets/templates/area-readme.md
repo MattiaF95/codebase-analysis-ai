@@ -24,6 +24,10 @@
 
 {{ dependencies }}
 
+## Problemi rilevati
+
+{{ detectedProblems }}
+
 ## Active functionality
 
 {{ activeFunctionality }}

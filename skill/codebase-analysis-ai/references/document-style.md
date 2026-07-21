@@ -17,7 +17,7 @@ Keep code identifiers, command names, API fields, protocol names, library names,
 ## Write for humans without losing technical precision
 
 - Start each document and major section with the information the reader needs before implementation detail.
-- In the opening section, state what the document covers in one or two complete sentences. Name the component, flow, decision, or repository area described by the file.
+- In the opening scope section, state immediately what the document contains and name the component, flow, decision, or repository area described by the file. Use one short paragraph of one or two lines, with no context, rationale, or implementation detail; keep it within two short sentences and 35 words.
 - Prefer familiar words and direct verbs. Use specialized terminology when it is the exact repository term, then explain what it means and why it matters.
 - Expand uncommon, ambiguous, or domain-specific acronyms at first meaningful use in each standalone document, for example `Role-Based Access Control (RBAC)`. Use the acronym afterward.
 - Do not expand an acronym when the expansion would be less recognizable than the established product, protocol, or repository term. Explain its role instead when needed.
@@ -31,6 +31,47 @@ Keep code identifiers, command names, API fields, protocol names, library names,
 - Avoid promotional language, filler, unexplained jargon, and paragraphs that merely restate a heading.
 
 An engineer unfamiliar with the repository should be able to identify what the documented area does, why it exists, where it is implemented, how its main flow works, and what can change or fail. Do not remove context, rationale, contracts, edge cases, or failure behavior merely to reduce document length.
+
+## Explain behavior as a narrative
+
+Documentation must be explanatory, not a collection of labels or extracted code symbols. Use prose to connect the evidence and make the reader understand the behavior without opening the implementation immediately.
+
+- For every important flow, explain the trigger, the acting component, the ordered steps, the decisions and conditions, the data or state that changes, and the resulting outcome.
+- Explain why each relevant decision exists, what contract it protects, and what happens on validation failure, missing data, authorization failure, dependency failure, timeout, or other repository-specific edge cases.
+- Use lists, tables, diagrams, and code blocks as supporting tools. Introduce and interpret each one in prose; never let a list or Mermaid diagram replace the explanation of the flow.
+- Describe the normal path first, then the meaningful alternatives and failure paths. State which behavior is verified in source or tests and label inferences or unresolved evidence explicitly.
+- Prefer a few complete paragraphs that tell the operational story over shallow sections containing only bullet points, filenames, class names, or endpoint inventories.
+- For request, event, persistence, deployment, and authentication flows, name the entry point, the handoffs between components, the boundary crossed, and the observable result for the caller or operator.
+
+## Classify detected problems
+
+When the evidence reveals a problem, limitation, inconsistency, or meaningful uncertainty, add a `Problemi rilevati` section. Do not hide findings in general prose or in a list of limitations.
+
+Classify each finding with exactly one type:
+
+- `bug`: observed behavior contradicts an explicit contract, test, invariant, or stated requirement;
+- `security`: weakness affecting confidentiality, integrity, authentication, authorization, secrets, or trust boundaries;
+- `reliability`: failure, data-loss, consistency, recovery, timeout, rollback, or operational risk;
+- `maintainability`: design inconsistency, duplication, hidden coupling, or change risk that does not currently prove incorrect behavior;
+- `coverage-gap`: missing mapping, test, validation, observability, or evidence that prevents a confident conclusion;
+- `documentation`: documentation is stale, incomplete, contradictory, or materially misleading.
+
+Assign exactly one severity: `critical` (immediate severe impact or unsafe publication), `high` (likely material impact), `medium` (bounded impact or important operational risk), `low` (minor impact), or `info` (contextual observation without an actionable risk). Severity is about impact, not certainty.
+
+Use this structure for every finding:
+
+```markdown
+### [medium][reliability] Short problem statement
+
+- Evidenza: `repository-relative/path:line` or test/command result.
+- Comportamento osservato: what the implementation does.
+- Impatto: who or what can be affected and how.
+- Confidenza: `alta`, `media`, or `bassa`, with the reason.
+- Verifica: source-only, test, runtime, or external state checked.
+- Azione consigliata: concrete next step, or `nessuna` when it is an accepted limitation.
+```
+
+Separate verified defects from risks, accepted design limitations, and unresolved questions. Never promote an inference to a bug without evidence. If no finding is supported, state that no problems were detected within the analyzed scope and explain what was not verified.
 
 ## Organize from context to detail
 

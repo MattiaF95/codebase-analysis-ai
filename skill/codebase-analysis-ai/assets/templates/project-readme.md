@@ -36,6 +36,10 @@
 
 {{ tests }}
 
+## Problemi rilevati
+
+{{ detectedProblems }}
+
 ## Planned work and TODOs
 
 {{ plannedWork }}
