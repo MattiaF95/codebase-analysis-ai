@@ -45,7 +45,7 @@ Documentation must be explanatory, not a collection of labels or extracted code 
 
 ## Classify detected problems
 
-When the evidence reveals a problem, limitation, inconsistency, or meaningful uncertainty, add a `Problemi rilevati` section. Do not hide findings in general prose or in a list of limitations.
+When the evidence reveals a problem, limitation, inconsistency, or meaningful uncertainty, add a detected-problems section whose heading is translated into the selected documentation language, for example `Problemi rilevati` in Italian or `Detected problems` in English. Render the template placeholder `detectedProblemsHeading` with that localized heading. Do not hide findings in general prose or in a list of limitations.
 
 Classify each finding with exactly one type:
 

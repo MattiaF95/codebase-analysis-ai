@@ -24,7 +24,7 @@
 
 {{ dependencies }}
 
-## Problemi rilevati
+## {{ detectedProblemsHeading }}
 
 {{ detectedProblems }}
 

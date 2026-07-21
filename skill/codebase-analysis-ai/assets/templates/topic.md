@@ -24,7 +24,7 @@
 
 {{ implementationDetails }}
 
-## Problemi rilevati
+## {{ detectedProblemsHeading }}
 
 {{ detectedProblems }}
 

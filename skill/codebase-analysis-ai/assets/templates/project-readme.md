@@ -36,7 +36,7 @@
 
 {{ tests }}
 
-## Problemi rilevati
+## {{ detectedProblemsHeading }}
 
 {{ detectedProblems }}
 

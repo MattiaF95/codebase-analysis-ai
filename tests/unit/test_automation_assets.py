@@ -24,6 +24,12 @@ class AutomationAssetsTest(unittest.TestCase):
             self.assertIn("authoritative context", content, name)
             self.assertNotIn("check --mode working-tree --json", content, name)
 
+    def test_problem_headings_are_localized_placeholders(self):
+        for name in ("topic.md", "area-readme.md", "project-readme.md"):
+            content = (SKILL / "assets" / "templates" / name).read_text(encoding="utf-8")
+            self.assertIn("## {{ detectedProblemsHeading }}", content, name)
+            self.assertNotIn("## Problemi rilevati", content, name)
+
 
 if __name__ == "__main__":
     unittest.main()
