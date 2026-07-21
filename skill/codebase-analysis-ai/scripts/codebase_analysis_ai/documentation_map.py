@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+from .path_filters import is_excluded_path
+
 
 DEFAULT_IGNORE = [
     ".git/**",
@@ -22,13 +24,24 @@ DEFAULT_IGNORE = [
     ".github/workflows/codebase-analysis-ai.yml",
     "docs/**",
     "tools/codebase-analysis-ai/**",
+    "node_modules/**",
     "**/node_modules/**",
+    "target/**",
     "**/target/**",
+    "dist/**",
     "**/dist/**",
+    "build/**",
     "**/build/**",
+    "__pycache__/**",
     "**/__pycache__/**",
+    ".env",
+    ".env.*",
     "**/.env",
     "**/.env.*",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.jks",
     "**/*.pem",
     "**/*.key",
     "**/*.p12",
@@ -169,6 +182,8 @@ class DocumentationMap:
 
     def is_ignored(self, path: str) -> bool:
         normalized = path.replace("\\", "/")
+        if is_excluded_path(tuple(Path(normalized).parts)):
+            return True
         return any(fnmatch.fnmatch(normalized, pattern) for pattern in self.ignore_patterns())
 
     def is_relevant_source(self, path: str) -> bool:

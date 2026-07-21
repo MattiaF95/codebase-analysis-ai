@@ -49,6 +49,19 @@ class ImpactGraphTest(unittest.TestCase):
         impact = resolve_impact(mapping, ["src/NewService.java", "docs/index.md"])
         self.assertEqual(("src/NewService.java",), impact.unmapped)
 
+    def test_ignores_root_build_dependencies_and_agent_metadata(self):
+        mapping = DocumentationMap(Path("map.json"), {"schemaVersion": 1, "settings": {}, "documents": {}})
+        impact = resolve_impact(mapping, [
+            "build/out.js",
+            "node_modules/pkg/index.js",
+            ".codex/tool.py",
+            ".vscode/settings.json",
+            ".env",
+            "certificate.pem",
+        ])
+
+        self.assertEqual((), impact.unmapped)
+
     def test_accepts_language_metadata(self):
         mapping = DocumentationMap(
             Path("map.json"),
