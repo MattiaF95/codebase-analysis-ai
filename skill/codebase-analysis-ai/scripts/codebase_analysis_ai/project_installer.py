@@ -12,6 +12,7 @@ from typing import Iterable
 START = "<!-- codebase-analysis-ai:start -->"
 END = "<!-- codebase-analysis-ai:end -->"
 MANAGED = "Managed by Codebase Analysis AI"
+RUNTIME_MARKER = "Codebase Analysis AI deterministic CLI."
 
 
 class InstallConflict(RuntimeError):
@@ -91,8 +92,11 @@ def _copy_runtime(project_root: Path) -> list[str]:
     destination.mkdir(parents=True, exist_ok=True)
     changes: list[str] = []
     check = destination / "check.py"
-    if not check.exists():
-        shutil.copy2(source_scripts / "codebase_analysis_ai.py", check)
+    if check.exists() and RUNTIME_MARKER not in check.read_text(encoding="utf-8", errors="replace"):
+        raise InstallConflict(f"Refusing to overwrite unmanaged runtime: {check}")
+    source_check = source_scripts / "codebase_analysis_ai.py"
+    if not check.exists() or check.read_bytes() != source_check.read_bytes():
+        shutil.copy2(source_check, check)
         changes.append("tools/codebase-analysis-ai/check.py")
     package_destination = destination / "codebase_analysis_ai"
     package_destination.mkdir(parents=True, exist_ok=True)
@@ -101,7 +105,7 @@ def _copy_runtime(project_root: Path) -> list[str]:
             continue
         relative = source.relative_to(source_scripts / "codebase_analysis_ai")
         target = package_destination / relative
-        if not target.exists():
+        if not target.exists() or target.read_bytes() != source.read_bytes():
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
             changes.append(f"tools/codebase-analysis-ai/codebase_analysis_ai/{relative.as_posix()}")
@@ -174,7 +178,7 @@ def install_project_components(
         hook_dir = project_root / ".githooks"
         for hook_name in ("post-commit", "pre-push", "post-merge", "post-rewrite"):
             target = hook_dir / hook_name
-            action = _ensure_managed_file(assets / "hooks" / hook_name, target)
+            action = _copy_managed_file(assets / "hooks" / hook_name, target)
             if action:
                 target.chmod(target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                 changes.append(f".githooks/{hook_name}")
@@ -192,7 +196,7 @@ def install_project_components(
 
     if with_github_action:
         workflow = project_root / ".github" / "workflows" / "codebase-analysis-ai.yml"
-        action = _ensure_managed_file(
+        action = _copy_managed_file(
             assets / "workflows" / "codebase-analysis-ai.yml",
             workflow,
             {"__DEFAULT_BRANCH__": _detect_default_branch(project_root)},

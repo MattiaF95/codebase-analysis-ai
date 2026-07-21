@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "skill" / "codebase-analysis-ai" / "scripts"))
 
+from codebase_analysis_ai.project_installer import install_project_components  # noqa: E402
 from codebase_analysis_ai.setup_state import inspect_setup  # noqa: E402
 
 
@@ -34,10 +35,33 @@ class SetupStateTest(unittest.TestCase):
                 "<!-- codebase-analysis-ai:start -->\nsetup-state --agents codex\n", encoding="utf-8"
             )
             state = inspect_setup(root, ["codex"])
-            self.assertEqual("present", state["runtime"])
-            self.assertEqual("managed", state["adapters"]["codex"])
+            self.assertEqual("unmanaged", state["runtime"])
+            self.assertEqual("outdated", state["adapters"]["codex"])
             self.assertEqual("absent", state["hooks"]["post-commit"])
             self.assertEqual("absent", state["githubAction"])
+
+    def test_reports_outdated_and_current_managed_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install_project_components(root, ["codex"], False, False, False)
+            self.assertEqual("managed", inspect_setup(root, ["codex"])["runtime"])
+
+            module = root / "tools" / "codebase-analysis-ai" / "codebase_analysis_ai" / "source_hashes.py"
+            module.write_text("outdated\n", encoding="utf-8")
+            self.assertEqual("outdated", inspect_setup(root, ["codex"])["runtime"])
+
+    def test_reports_current_managed_automation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            install_project_components(root, ["codex"], True, True, True)
+
+            state = inspect_setup(root, ["codex"])
+
+            self.assertEqual("managed", state["runtime"])
+            self.assertEqual("managed", state["adapters"]["codex"])
+            self.assertTrue(all(value == "managed" for value in state["hooks"].values()))
+            self.assertEqual("managed", state["githubAction"])
 
     def test_cli_returns_json(self):
         with tempfile.TemporaryDirectory() as directory:

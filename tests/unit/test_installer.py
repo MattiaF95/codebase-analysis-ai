@@ -23,7 +23,7 @@ class InstallerTest(unittest.TestCase):
             self.assertEqual(1, content.count(START))
             self.assertIn("Keep this.", content)
 
-    def test_existing_automation_is_preserved_and_missing_files_are_created(self):
+    def test_existing_managed_automation_is_refreshed_and_missing_files_are_created(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             subprocess.run(["git", "init", "-q", str(root)], check=True)
@@ -35,9 +35,9 @@ class InstallerTest(unittest.TestCase):
             action.parent.mkdir(parents=True)
             action.write_text("# Managed by Codebase Analysis AI.\ncustom\n", encoding="utf-8")
             install_project_components(root, ["codex"], False, True, True)
-            self.assertIn("custom", hook.read_text(encoding="utf-8"))
-            self.assertEqual(0o600, hook.stat().st_mode & 0o777)
-            self.assertIn("custom", action.read_text(encoding="utf-8"))
+            self.assertNotIn("custom", hook.read_text(encoding="utf-8"))
+            self.assertNotEqual(0, hook.stat().st_mode & 0o111)
+            self.assertNotIn("custom", action.read_text(encoding="utf-8"))
             self.assertIn("check --mode pre-push", (root / ".githooks" / "pre-push").read_text(encoding="utf-8"))
 
             second_changes = install_project_components(root, ["codex"], False, True, True)
@@ -73,7 +73,7 @@ class InstallerTest(unittest.TestCase):
             self.assertIn("Hook interruption protocol", content)
             self.assertNotIn("old rule", content)
 
-    def test_existing_runtime_is_preserved(self):
+    def test_unmanaged_runtime_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             runtime = root / "tools" / "codebase-analysis-ai"
@@ -82,10 +82,26 @@ class InstallerTest(unittest.TestCase):
             (runtime / "check.py").write_text("local runtime", encoding="utf-8")
             (package / "custom.py").write_text("local module", encoding="utf-8")
 
-            install_project_components(root, ["codex"], False, False, False)
+            with self.assertRaisesRegex(RuntimeError, "unmanaged runtime"):
+                install_project_components(root, ["codex"], False, False, False)
 
-            self.assertEqual("local runtime", (runtime / "check.py").read_text(encoding="utf-8"))
             self.assertEqual("local module", (package / "custom.py").read_text(encoding="utf-8"))
+
+    def test_existing_managed_runtime_is_refreshed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install_project_components(root, ["codex"], False, False, False)
+            runtime = root / "tools" / "codebase-analysis-ai"
+            module = runtime / "codebase_analysis_ai" / "source_hashes.py"
+            module.write_text("outdated\n", encoding="utf-8")
+
+            changes = install_project_components(root, ["codex"], False, False, False)
+
+            self.assertIn(
+                "tools/codebase-analysis-ai/codebase_analysis_ai/source_hashes.py",
+                changes,
+            )
+            self.assertNotEqual("outdated\n", module.read_text(encoding="utf-8"))
 
     def test_existing_hooks_path_is_not_replaced(self):
         with tempfile.TemporaryDirectory() as directory:
