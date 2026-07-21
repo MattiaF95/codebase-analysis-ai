@@ -102,6 +102,21 @@ class SetupStateTest(unittest.TestCase):
 
             self.assertEqual("inactive", state["hooks"]["post-commit"])
 
+    def test_reports_modified_managed_hook_and_workflow_as_outdated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            install_project_components(root, ["codex"], False, True, True)
+            hook = root / ".githooks" / "post-commit"
+            hook.write_text(hook.read_text(encoding="utf-8") + "# old\n", encoding="utf-8")
+            workflow = root / ".github" / "workflows" / "codebase-analysis-ai.yml"
+            workflow.write_text(workflow.read_text(encoding="utf-8") + "# old\n", encoding="utf-8")
+
+            state = inspect_setup(root, ["codex"])
+
+            self.assertEqual("outdated", state["hooks"]["post-commit"])
+            self.assertEqual("outdated", state["githubAction"])
+
     def test_cli_returns_json(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
