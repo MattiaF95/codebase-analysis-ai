@@ -64,3 +64,16 @@ class DocumentValidatorTest(unittest.TestCase):
             self.assertEqual(0, warning.returncode)
             self.assertFalse(json.loads(warning.stdout)["valid"])
             self.assertEqual(1, strict.returncode)
+
+    def test_rejects_explicit_paths_that_escape_repository(self):
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+            root = Path(directory)
+            external = Path(outside) / "outside.md"
+            external.write_text("# Outside\n", encoding="utf-8")
+            requested = external.relative_to(root.parent).as_posix()
+
+            report = validate_documents(root, [f"../{requested}"])
+
+            self.assertFalse(report["valid"])
+            self.assertEqual([], report["documents"])
+            self.assertTrue(any("path escapes repository" in issue for issue in report["issues"]))

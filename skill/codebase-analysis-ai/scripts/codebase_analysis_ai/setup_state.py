@@ -23,6 +23,24 @@ START = "<!-- codebase-analysis-ai:start -->"
 RUNTIME_MARKER = "Codebase Analysis AI deterministic CLI."
 
 
+def _source_runtime_files(source_package: Path) -> set[Path]:
+    return {
+        source.relative_to(source_package)
+        for source in source_package.rglob("*.py")
+        if "__pycache__" not in source.parts
+    }
+
+
+def _installed_runtime_files(installed_package: Path) -> set[Path]:
+    if not installed_package.is_dir():
+        return set()
+    return {
+        installed.relative_to(installed_package)
+        for installed in installed_package.rglob("*.py")
+        if "__pycache__" not in installed.parts
+    }
+
+
 def _file_state(path: Path, expected: str | None = None) -> str:
     if not path.exists():
         return "absent"
@@ -62,8 +80,14 @@ def _runtime_state(root: Path) -> str:
     source_check = source_scripts / "codebase_analysis_ai.py"
     if source_check.is_file() and source_check.read_bytes() != check.read_bytes():
         return "outdated"
-    for source in (source_scripts / "codebase_analysis_ai").rglob("*.py"):
-        relative = source.relative_to(source_scripts / "codebase_analysis_ai")
+    source_package = source_scripts / "codebase_analysis_ai"
+    installed_package = target / "codebase_analysis_ai"
+    expected_files = _source_runtime_files(source_package)
+    installed_files = _installed_runtime_files(installed_package)
+    if installed_files - expected_files:
+        return "outdated"
+    for relative in expected_files:
+        source = source_package / relative
         installed = target / "codebase_analysis_ai" / relative
         if not installed.is_file() or installed.read_bytes() != source.read_bytes():
             return "outdated"

@@ -105,6 +105,19 @@ class InstallerTest(unittest.TestCase):
             )
             self.assertNotEqual("outdated\n", module.read_text(encoding="utf-8"))
 
+    def test_unexpected_runtime_python_files_are_reported_not_removed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install_project_components(root, ["codex"], False, False, False)
+            extra = root / "tools" / "codebase-analysis-ai" / "codebase_analysis_ai" / "obsolete" / "old.py"
+            extra.parent.mkdir()
+            extra.write_text("old\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(RuntimeError, "unexpected installed files"):
+                install_project_components(root, ["codex"], False, False, False)
+
+            self.assertEqual("old\n", extra.read_text(encoding="utf-8"))
+
     def test_existing_hooks_path_is_not_replaced(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

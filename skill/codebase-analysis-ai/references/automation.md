@@ -10,9 +10,9 @@ The deterministic checker never invokes an AI model.
 
 ## Initial automation proposal
 
-After `setup-state`, always include automation in the single initial contract. For the runtime, each active-host adapter, every required hook, and the GitHub Action, report one proposed action: `create`, `refresh`, `repair permissions`, `keep`, or `resolve conflict`. Missing components must be proposed as `create`, outdated managed components as `refresh`, inactive managed hooks as `repair permissions`, current managed components as `keep`, and unmanaged collisions as `resolve conflict`. Briefly explain the operational effect and ask for confirmation once for the complete contract.
+After `setup-state`, always include automation in the single initial contract. For the runtime, each active-host adapter, every required hook, and the GitHub Action, report one proposed action: `create`, `refresh`, `repair permissions`, `keep`, or `resolve conflict`. Missing components must be proposed as `create`, outdated managed components as `refresh`, inactive managed hooks as `repair permissions`, current managed components as `keep`, and unmanaged collisions or unexpected installed runtime files as `resolve conflict`. Briefly explain the operational effect and ask for confirmation once for the complete contract.
 
-Missing managed components must be created and outdated managed components refreshed after setup confirmation. Unmanaged or conflicting files must not be overwritten; identify the exact path and stop setup for that component.
+Missing managed components must be created and outdated managed components refreshed after setup confirmation. Unmanaged or conflicting files must not be overwritten or removed automatically; identify the exact path and stop setup for that component.
 
 ## Agent rules
 

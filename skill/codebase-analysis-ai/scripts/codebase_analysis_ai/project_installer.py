@@ -24,6 +24,32 @@ def skill_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def _source_runtime_files(source_package: Path) -> set[Path]:
+    return {
+        source.relative_to(source_package)
+        for source in source_package.rglob("*")
+        if source.is_file() and source.suffix == ".py" and "__pycache__" not in source.parts
+    }
+
+
+def _unexpected_installed_runtime_files(project_root: Path) -> list[str]:
+    source_package = skill_root() / "scripts" / "codebase_analysis_ai"
+    installed_package = project_root / "tools" / "codebase-analysis-ai" / "codebase_analysis_ai"
+    if not installed_package.is_dir():
+        return []
+    expected = _source_runtime_files(source_package)
+    unexpected = []
+    for installed in installed_package.rglob("*.py"):
+        if "__pycache__" in installed.parts:
+            continue
+        relative = installed.relative_to(installed_package)
+        if relative not in expected:
+            unexpected.append(
+                f"tools/codebase-analysis-ai/codebase_analysis_ai/{relative.as_posix()}"
+            )
+    return sorted(unexpected)
+
+
 def _atomic_write(target: Path, content: bytes, mode: int | None = None) -> None:
     """Replace one file atomically without exposing partially written content."""
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -106,6 +132,12 @@ def _preflight_runtime(project_root: Path) -> None:
         or RUNTIME_MARKER not in check.read_text(encoding="utf-8", errors="replace")
     ):
         raise InstallConflict(f"Refusing to overwrite unmanaged runtime: {check}")
+    unexpected = _unexpected_installed_runtime_files(project_root)
+    if unexpected:
+        raise InstallConflict(
+            "Refusing to refresh runtime with unexpected installed files: "
+            + ", ".join(unexpected)
+        )
 
 
 def _preflight_agent_file(target: Path) -> None:

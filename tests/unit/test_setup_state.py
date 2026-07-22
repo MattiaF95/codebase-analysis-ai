@@ -50,6 +50,16 @@ class SetupStateTest(unittest.TestCase):
             module.write_text("outdated\n", encoding="utf-8")
             self.assertEqual("outdated", inspect_setup(root, ["codex"])["runtime"])
 
+    def test_reports_runtime_with_unexpected_python_files_as_outdated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install_project_components(root, ["codex"], False, False, False)
+            extra = root / "tools" / "codebase-analysis-ai" / "codebase_analysis_ai" / "obsolete" / "old.py"
+            extra.parent.mkdir()
+            extra.write_text("old\n", encoding="utf-8")
+
+            self.assertEqual("outdated", inspect_setup(root, ["codex"])["runtime"])
+
     def test_reports_current_managed_automation(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

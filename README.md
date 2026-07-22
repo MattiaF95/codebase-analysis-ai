@@ -125,7 +125,7 @@ python install.py --project-root /path/to/project --agent codex --scope project
 python install.py --agent codex --scope user
 ```
 
-The installer is idempotent, creates only missing skill components, preserves existing agent instructions, hooks, workflows, and unrelated automation, and never replaces unmanaged files. During bootstrap, one project-level analyzer is mandatory for each of at least two independent macro-areas containing 15 or more relevant files.
+The installer is idempotent, creates only missing skill components, preserves existing agent instructions, hooks, workflows, and unrelated automation, and never replaces unmanaged files. If the installed runtime contains unexpected Python files below `tools/codebase-analysis-ai/codebase_analysis_ai/`, setup reports the runtime as outdated and `install` stops with a conflict instead of deleting the files. During bootstrap, one project-level analyzer is mandatory for each of at least two independent macro-areas containing 15 or more relevant files.
 
 ## Usage
 
@@ -145,11 +145,27 @@ After installation, run the deterministic checker directly with:
 python tools/codebase-analysis-ai/check.py check --mode working-tree
 ```
 
+Inspect installed setup state before relying on a project-local runtime:
+
+```bash
+python tools/codebase-analysis-ai/check.py setup-state --agents codex
+```
+
+`setup-state` reports runtime, agent adapters, hooks, the GitHub Action, and documentation-map coherence. Missing components are setup work; managed-but-different components are outdated; unmanaged or unexpected runtime files require an explicit cleanup or reinstall decision before `install` continues.
+
 Before a full bootstrap, run the non-content preflight to detect existing text, markup, PDF, Office, OpenDocument, and other common documentation formats:
 
 ```bash
 python tools/codebase-analysis-ai/check.py docs-state
 ```
+
+Validate generated or changed managed documents with:
+
+```bash
+python tools/codebase-analysis-ai/check.py validate-docs docs/index.md
+```
+
+`validate-docs` inspects only repository-contained Markdown paths. Explicit paths that resolve outside the Git root are rejected with `path escapes repository`; the validator does not read external files.
 
 ## Automation
 
@@ -217,7 +233,7 @@ The installable skill lives under `skill/codebase-analysis-ai/`; the separate Py
 python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
-The tests verify structural inventory, mappings, one-level impact resolution, link validation, installer idempotency, language metadata, stale-source detection, and hash refreshes. Skill validation checks its structure and metadata. Live host tests are still required to verify profile discovery and delegation behavior across Codex, Claude Code, Gemini CLI, and GitHub Copilot.
+The tests verify structural inventory, mappings, one-level impact resolution, link validation, installer idempotency and rollback, runtime conflict reporting, validate-docs repository boundaries, language metadata, stale-source detection, and hash refreshes. Skill validation checks its structure and metadata. Live host tests are still required to verify profile discovery and delegation behavior across Codex, Claude Code, Gemini CLI, and GitHub Copilot.
 
 ## Repository structure
 

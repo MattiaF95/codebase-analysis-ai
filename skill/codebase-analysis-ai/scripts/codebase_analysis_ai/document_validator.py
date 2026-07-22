@@ -17,6 +17,16 @@ FINDING_SEVERITIES = {"critical", "high", "medium", "low", "info"}
 FINDING_VERIFICATIONS = {"source-only", "test", "runtime", "external-state"}
 
 
+def _repository_relative_path(root: Path, requested: str) -> tuple[str, Path | None, str | None]:
+    normalized = requested.replace("\\", "/")
+    document = (root / normalized).resolve()
+    try:
+        relative = document.relative_to(root).as_posix()
+    except ValueError:
+        return normalized, None, f"{normalized}: path escapes repository"
+    return relative, document, None
+
+
 def _sentences(text: str) -> int:
     return len([part for part in re.split(r"(?<=[.!?])\s+", text.strip()) if part.strip()])
 
@@ -78,8 +88,12 @@ def validate_documents(root: Path, markdown_paths: Iterable[str] | None = None) 
         ) if (root / "docs").is_dir() else []
     issues: list[str] = []
     inspected: list[str] = []
-    for relative in paths:
-        document = root / relative
+    for requested in paths:
+        relative, document, path_issue = _repository_relative_path(root, requested)
+        if path_issue:
+            issues.append(path_issue)
+            continue
+        assert document is not None
         if not document.is_file():
             issues.append(f"Missing document: {relative}")
             continue
