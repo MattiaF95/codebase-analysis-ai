@@ -13,13 +13,14 @@ After changing application behavior, APIs, schemas, security, configuration, dep
 8. If `docs/` does not exist and bootstrap was not explicit, ask whether to initialize documentation or stop.
 9. Do not invent active functionality, TODOs, commands, dependencies, or architectural relationships.
 10. Preserve manual content outside managed sections.
+11. A manually changed Markdown document is immediately accepted as valid: record it as `changedDocuments`, preserve its content, and do not update documentation or source hashes automatically.
 
 ## Hook interruption protocol
 
 When any `git` command starts an output-producing hook, reports a hook failure, or returns a non-zero hook status:
 
 1. Stop immediately. Do not continue with commit, push, merge, rebase, amend, or any other Git operation.
-2. Read and preserve the complete JSON report emitted by the hook, including `mode`, `changedFiles`, stale mappings, unmapped files, link errors, and exit status. This report is the authoritative context; never replace it with a `working-tree` check.
+2. Read and preserve the complete JSON report emitted by the hook, including `mode`, `changedFiles`, `changedDocuments`, stale mappings, unmapped files, link errors, and exit status. This report is the authoritative context; never replace it with a `working-tree` check.
 3. For `post-commit`, rerun only when needed with exactly `python tools/codebase-analysis-ai/check.py check --mode post-commit --head HEAD --json`; omitting `--base` works for both root and later commits. For `pre-push`, `post-merge`, and `post-rewrite`, analyze the captured hook report because their original stdin or refs may no longer be reproducible.
 4. Fix or report the cause, and only resume the interrupted Git flow after the relevant check is clean or the user explicitly accepts a warning-only result.
 

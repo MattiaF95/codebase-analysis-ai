@@ -81,6 +81,42 @@ class CheckerIntegrationTest(unittest.TestCase):
             passed = run(sys.executable, str(CLI), "--root", str(project), "check", "--mode", "working-tree", cwd=project)
             self.assertEqual(0, passed.returncode, passed.stdout + passed.stderr)
 
+    def test_accepts_manual_document_change_without_validating_or_rewriting_it(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            run("git", "init", "-b", "main", cwd=project)
+            run("git", "config", "user.name", "Test", cwd=project)
+            run("git", "config", "user.email", "test@example.com", cwd=project)
+            docs = project / "docs"
+            (docs / "_meta").mkdir(parents=True)
+            document = docs / "guide.md"
+            document.write_text("# Guide\n\n[Manual link](missing.md)\n", encoding="utf-8")
+            (docs / "_meta" / "documentation-map.json").write_text(json.dumps({
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "guide": {
+                        "path": "docs/guide.md",
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    }
+                },
+            }), encoding="utf-8")
+            run("git", "add", ".", cwd=project)
+            run("git", "commit", "-qm", "Initial", cwd=project)
+
+            document.write_text("# Manually updated guide\n\n[Broken manual link](missing.md)\n", encoding="utf-8")
+            result = run(
+                sys.executable, str(CLI), "--root", str(project), "check", "--mode", "working-tree", "--json", cwd=project
+            )
+
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(["docs/guide.md"], report["changedDocuments"])
+            self.assertEqual([], report["linkErrors"])
+            self.assertEqual("# Manually updated guide\n\n[Broken manual link](missing.md)\n", document.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

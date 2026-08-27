@@ -62,6 +62,8 @@ def command_check(args: argparse.Namespace) -> int:
 
     stale: list[str] = []
     for path in changed_paths:
+        if path in impact.changed_documents:
+            continue
         current = sha256_file(root / path)
         for doc_id in documentation_map.matching_documents(path):
             recorded = documentation_map.documents[doc_id].get("sourceHashes", {}).get(path)
@@ -81,6 +83,7 @@ def command_check(args: argparse.Namespace) -> int:
         "changedFiles": changed_paths,
         "directDocuments": list(impact.direct),
         "relatedDocuments": list(impact.related),
+        "changedDocuments": list(impact.changed_documents),
         "unmappedFiles": list(impact.unmapped),
         "staleMappings": stale,
         "linkErrors": link_errors,

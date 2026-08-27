@@ -177,7 +177,7 @@ Hooks provide fast local feedback for commits, pushes, merges, rebases, and amen
 git config core.hooksPath .githooks
 ```
 
-The pre-push hook blocks publication when documentation hashes are stale and prints the reason plus `git push --no-verify` as the explicit bypass command. Hooks can be bypassed, so they are not the shared enforcement layer.
+The pre-push hook blocks publication when documentation hashes are stale and prints the reason plus `git push --no-verify` as the explicit bypass command. Manually changed Markdown documents are recorded as `changedDocuments` and accepted immediately as valid; their content and source hashes are not changed automatically. Hooks can be bypassed, so they are not the shared enforcement layer.
 
 ### GitHub Action
 

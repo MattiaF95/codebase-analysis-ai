@@ -48,6 +48,25 @@ class ImpactGraphTest(unittest.TestCase):
         mapping = DocumentationMap(Path("map.json"), {"schemaVersion": 1, "settings": {}, "documents": {}})
         impact = resolve_impact(mapping, ["src/NewService.java", "docs/index.md"])
         self.assertEqual(("src/NewService.java",), impact.unmapped)
+        self.assertEqual(("docs/index.md",), impact.changed_documents)
+
+    def test_accepts_manual_document_changes_without_source_impact(self):
+        mapping = DocumentationMap(Path("map.json"), {
+            "schemaVersion": 1,
+            "settings": {},
+            "documents": {"guide": {
+                "path": "docs/guide.md",
+                "sourcePatterns": ["src/**"],
+                "sourceHashes": {},
+                "relatedDocuments": [],
+            }},
+        })
+
+        impact = resolve_impact(mapping, ["docs/guide.md", "docs/new.md", "docs/_archive/old.md"])
+
+        self.assertEqual(("docs/guide.md", "docs/new.md"), impact.changed_documents)
+        self.assertEqual((), impact.direct)
+        self.assertEqual((), impact.unmapped)
 
     def test_ignores_root_build_dependencies_and_agent_metadata(self):
         mapping = DocumentationMap(Path("map.json"), {"schemaVersion": 1, "settings": {}, "documents": {}})

@@ -227,6 +227,21 @@ class DocumentationMap:
         pure = Path(path)
         return pure.name in RELEVANT_NAMES or pure.suffix.lower() in RELEVANT_SUFFIXES
 
+    def is_document_path(self, path: str) -> bool:
+        normalized = path.replace("\\", "/")
+        registered = {
+            str(document.get("path", "")).replace("\\", "/")
+            for document in self.documents.values()
+            if isinstance(document, dict)
+        }
+        if normalized in registered:
+            return True
+        return (
+            normalized.startswith("docs/")
+            and normalized.endswith(".md")
+            and not normalized.startswith("docs/_archive/")
+        )
+
     def matching_documents(self, source_path: str) -> set[str]:
         normalized = source_path.replace("\\", "/")
         matched: set[str] = set()

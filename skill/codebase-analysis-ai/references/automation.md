@@ -25,7 +25,7 @@ Install or refresh the managed block in the instruction file for each selected h
 - `post-merge`: warn after merge-based pulls.
 - `post-rewrite`: warn after rebase, amend, or pull with rebase.
 
-Every hook invokes the checker with `--json`. When an agent runs a Git command and any hook produces output or a non-zero status, the agent must stop the Git flow and preserve and analyze that complete JSON report as the authoritative execution context. It must never substitute a generic `working-tree` check after a commit or push attempt.
+Every hook invokes the checker with `--json`. When an agent runs a Git command and any hook produces output or a non-zero status, the agent must stop the Git flow and preserve and analyze that complete JSON report as the authoritative execution context. A manually changed Markdown document is recorded as `changedDocuments` and accepted immediately as valid; preserve it and do not update documentation or source hashes automatically. It must never substitute a generic `working-tree` check after a commit or push attempt.
 
 The agent may rerun `post-commit` with `python tools/codebase-analysis-ai/check.py check --mode post-commit --head HEAD --json` while `HEAD` is unchanged; omitting `--base` supports both root and later commits. For `pre-push`, `post-merge`, and `post-rewrite`, use the captured report because their original stdin or refs may no longer be reproducible. Do not continue with another Git operation until the relevant result is clean or the user explicitly accepts a warning-only result. Hook output is never irrelevant: warnings require analysis, and a failing `pre-push` blocks publication.
 

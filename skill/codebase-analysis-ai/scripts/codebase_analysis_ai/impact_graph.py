@@ -13,6 +13,7 @@ class Impact:
     direct: tuple[str, ...]
     related: tuple[str, ...]
     unmapped: tuple[str, ...]
+    changed_documents: tuple[str, ...]
 
     @property
     def all_documents(self) -> tuple[str, ...]:
@@ -22,7 +23,11 @@ class Impact:
 def resolve_impact(documentation_map: DocumentationMap, changed_paths: Iterable[str]) -> Impact:
     direct: set[str] = set()
     unmapped: set[str] = set()
+    changed_documents: set[str] = set()
     for path in changed_paths:
+        if documentation_map.is_document_path(path):
+            changed_documents.add(path.replace("\\", "/"))
+            continue
         if documentation_map.is_ignored(path):
             continue
         matches = documentation_map.matching_documents(path)
@@ -36,4 +41,9 @@ def resolve_impact(documentation_map: DocumentationMap, changed_paths: Iterable[
         related.update(documentation_map.documents[doc_id].get("relatedDocuments", []))
     related.difference_update(direct)
 
-    return Impact(tuple(sorted(direct)), tuple(sorted(related)), tuple(sorted(unmapped)))
+    return Impact(
+        tuple(sorted(direct)),
+        tuple(sorted(related)),
+        tuple(sorted(unmapped)),
+        tuple(sorted(changed_documents)),
+    )
