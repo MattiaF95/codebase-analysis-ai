@@ -12,6 +12,19 @@ class AutomationAssetsTest(unittest.TestCase):
             content = (SKILL / "assets" / "hooks" / name).read_text(encoding="utf-8")
             self.assertIn("--json", content, name)
 
+    def test_pre_push_explains_block_and_force_command(self):
+        content = (SKILL / "assets" / "hooks" / "pre-push").read_text(encoding="utf-8")
+        self.assertIn("push blocked", content)
+        self.assertIn("documentation hashes do not match", content)
+        self.assertIn("git push --no-verify", content)
+
+    def test_workflow_is_always_warning_only(self):
+        content = (SKILL / "assets" / "workflows" / "codebase-analysis-ai.yml").read_text(encoding="utf-8")
+        self.assertIn("Documentation audit", content)
+        self.assertIn("--warn-only", content)
+        self.assertNotIn("forced_push", content)
+        self.assertNotIn("if [", content)
+
     def test_agent_adapters_preserve_hook_context(self):
         adapters = (
             "AGENTS.md",

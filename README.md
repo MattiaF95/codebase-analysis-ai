@@ -177,11 +177,11 @@ Hooks provide fast local feedback for commits, pushes, merges, rebases, and amen
 git config core.hooksPath .githooks
 ```
 
-Hooks can be bypassed, so they are not the shared enforcement layer.
+The pre-push hook blocks publication when documentation hashes are stale and prints the reason plus `git push --no-verify` as the explicit bypass command. Hooks can be bypassed, so they are not the shared enforcement layer.
 
 ### GitHub Action
 
-The workflow checks pull request updates, merge queues through `merge_group`, merges, direct pushes to the default branch, and manually requested audits. It uses `contents: read`, requires no model secrets, and creates no commits. Branch protection and required status checks must be enabled separately in repository settings.
+The workflow checks pull request updates, merge queues through `merge_group`, merges, direct pushes to the default branch, and manually requested audits. It always reports documentation inconsistencies as an English warning with the audit reason and never fails the workflow. It uses `contents: read`, requires no model secrets, and creates no commits. Branch protection and required status checks must be enabled separately in repository settings.
 
 ## Documentation rules
 

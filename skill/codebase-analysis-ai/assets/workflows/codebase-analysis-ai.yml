@@ -31,7 +31,9 @@ jobs:
 
       - name: Run documentation audit
         run: |
+          echo "::warning title=Documentation audit::Documentation consistency is reported as a warning and does not block this workflow. The audit result below contains the reason details."
           python tools/codebase-analysis-ai/check.py check \
             --mode ci \
             --event-name "$GITHUB_EVENT_NAME" \
-            --event-path "$GITHUB_EVENT_PATH"
+            --event-path "$GITHUB_EVENT_PATH" \
+            --warn-only

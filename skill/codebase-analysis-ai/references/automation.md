@@ -21,7 +21,7 @@ Install or refresh the managed block in the instruction file for each selected h
 ## Hooks
 
 - `post-commit`: warn after stale changes are committed.
-- `pre-push`: block only when unprocessed impact remains.
+- `pre-push`: block only when unprocessed impact remains and print the reason plus the explicit `git push --no-verify` bypass command.
 - `post-merge`: warn after merge-based pulls.
 - `post-rewrite`: warn after rebase, amend, or pull with rebase.
 
@@ -35,4 +35,4 @@ Store exactly these hooks under `.githooks`: `post-commit`, `pre-push`, `post-me
 
 Install `.github/workflows/codebase-analysis-ai.yml` with read-only contents permission. Cover Pull Request updates, merge groups, default-branch pushes, and manual dispatch. Do not add model credentials or automatic commits.
 
-Create the workflow when absent and refresh it when outdated and managed. If the dedicated path is unmanaged, report the conflict and do not overwrite it. Other workflows do not prevent creating the dedicated workflow, and must never be modified.
+Create the workflow when absent and refresh it when outdated and managed. The workflow always reports audit failures with an English warning and runs in warning-only mode; it never blocks the workflow. If the dedicated path is unmanaged, report the conflict and do not overwrite it. Other workflows do not prevent creating the dedicated workflow, and must never be modified.
