@@ -2,7 +2,7 @@
 
 Migrate restructures existing documentation without performing a general evidence-based content refresh. It may move, rename, index, link, and normalize documents while preserving useful project decisions, explanations, and flows. Use `update` after migration when content must also be synchronized with the implementation.
 
-Migration normally runs in the parent agent because its primary task is indexing and normalizing existing documentation. Reuse existing read-only area profiles only when source ownership, document mapping, or cross-area responsibility cannot be established from the migration inputs. Pass the same self-contained evidence brief and JSON contract used by `update`; validate profile safety and the working tree before and after delegation. Profiles may be invoked in parallel for independent areas, but `migrate` must never create or modify persistent profiles; use the sequential fallback when a profile is unavailable or stale.
+Migration normally runs in the parent agent because its primary task is indexing and normalizing existing documentation. When source ownership, document mapping, or cross-area responsibility requires delegated analysis, apply `analyzer-profile-policy.md` and create missing profiles under that policy. Otherwise use the parent agent by default. Pass the same self-contained evidence brief and JSON contract used by `update`; validate profile safety and the working tree before and after delegation. Profiles may be invoked in parallel for independent areas; use the sequential fallback when a profile is unavailable or stale.
 
 ## Procedure
 

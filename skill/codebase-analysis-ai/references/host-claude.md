@@ -9,7 +9,7 @@ Write one profile per macro-area to `.claude/agents/<area>-analyzer.md`. Normali
 ```markdown
 ---
 name: <area>-analyzer
-description: Use this agent to review the <area> macro-area during documentation bootstrap.
+description: Use this agent to review the <area> macro-area during documentation bootstrap or migration.
 tools: Read, Grep, Glob
 model: inherit
 ---

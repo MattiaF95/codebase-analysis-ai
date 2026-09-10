@@ -46,13 +46,13 @@ The traversal stops after one relationship level. If source `A` maps to document
 ### Full bootstrap orchestration
 
 1. A deterministic inventory identifies structural evidence; the parent selectively reads it and derives source macro-areas and separate documentation topics without relying on a fixed technology catalog.
-2. It proposes `parent-only`, mixed `selective`, or `all` safely separable areas, gives a brief evidence-based motivation and per-area assignment, and asks for confirmation before creating or invoking analyzers. During bootstrap, at least two independent macro-areas with 15 or more relevant files each require analyzer creation and delegation.
+2. It proposes `parent-only`, mixed `selective`, or `all` safely separable areas, gives a brief evidence-based motivation and per-area assignment, and asks for confirmation before creating or invoking analyzers. During bootstrap, at least two independent macro-areas with 15 or more relevant files each require analyzer creation and delegation unless the user explicitly selects `parent-only`.
 3. Approved analyzers review bounded source scopes and return JSON reports whose claims and findings include repository sources; small or overlapping areas may remain in the parent.
 4. The parent validates paths and evidence, preserves and prioritizes findings, maps reports to thematic documents, resolves cross-area flows, and alone writes the documentation. The same findings contract applies when the parent works without analyzers.
 
 ![Bootstrap macro-area analyzer orchestration](assets/bootstrap-orchestration.png)
 
-Profiles are created only during `bootstrap`, and only for areas approved for delegation. Initial absence is handled according to the approved plan: when the two-area/15-file threshold is met, creation is mandatory; a profile creation or invocation failure triggers a recorded in-process fallback.
+Profiles are created only during `bootstrap` or `migrate`, and only for areas approved for delegation. An explicit `parent-only` choice suppresses profile creation and delegation even above the threshold. Otherwise, when the two-area/15-file threshold is met, creation is mandatory; a profile creation or invocation failure triggers a recorded in-process fallback. `update` and `audit` reuse existing profiles only.
 
 ## Modes
 
@@ -82,7 +82,7 @@ After an update, the agent validates the changed documentation, refreshes hashes
 
 ## Agent compatibility
 
-The core workflow remains provider-neutral. During a full bootstrap, the skill detects the active host and creates project-level, read-only analyzer profiles only for areas approved for delegation. Small or overlapping areas may remain in the parent. It never creates profiles for inactive hosts or at user scope.
+The core workflow remains provider-neutral. During bootstrap or migration when delegation is required, the skill detects the active host and creates project-level, read-only analyzer profiles only for areas approved for delegation. An explicit `parent-only` choice suppresses creation and delegation even above the threshold. Small or overlapping areas may remain in the parent. It never creates profiles for inactive hosts or at user scope.
 
 | Agent | Skill location and invocation | Analyzer profile | Discovery or invocation |
 |---|---|---|---|
@@ -93,7 +93,7 @@ The core workflow remains provider-neutral. During a full bootstrap, the skill d
 
 Analyzer profiles explicitly exclude write, shell, and recursive-agent tools where the host supports tool allowlists. Codex profiles set `sandbox_mode = "read-only"`. Every invocation receives a self-contained JSON evidence contract; only the parent agent merges reports and writes documentation.
 
-The generated profiles contain a managed marker and area paths. A later bootstrap may update managed profiles, but it never overwrites an unmanaged name collision, creates profiles for inactive hosts, or silently deletes stale profiles.
+The generated profiles contain a managed marker and area paths. Bootstrap or migration may create missing profiles, but `update` and `audit` reuse existing profiles only. Existing profiles are not silently overwritten, stale profiles are not deleted, and inactive-host or user-scope profiles are never created.
 
 ### Agent model targets
 
@@ -125,7 +125,7 @@ python install.py --project-root /path/to/project --agent codex --scope project
 python install.py --agent codex --scope user
 ```
 
-The installer is idempotent, creates only missing skill components, preserves existing agent instructions, hooks, workflows, and unrelated automation, and never replaces unmanaged files. If the installed runtime contains unexpected Python files below `tools/codebase-analysis-ai/codebase_analysis_ai/`, setup reports the runtime as outdated and `install` stops with a conflict instead of deleting the files. During bootstrap, one project-level analyzer is mandatory for each of at least two independent macro-areas containing 15 or more relevant files.
+The installer is idempotent, creates only missing skill components, preserves existing agent instructions, hooks, workflows, and unrelated automation, and never replaces unmanaged files. If the installed runtime contains unexpected Python files below `tools/codebase-analysis-ai/codebase_analysis_ai/`, setup reports the runtime as outdated and `install` stops with a conflict instead of deleting the files. During bootstrap or delegated migration, one project-level analyzer is mandatory for each of at least two independent macro-areas containing 15 or more relevant files unless the user explicitly selects `parent-only`.
 
 ## Usage
 
@@ -199,7 +199,7 @@ The skill never invents functionality, TODOs, commands, dependencies, or archite
 
 ## Generated documentation structure
 
-The structure is adaptive: deterministic tooling inventories project evidence, while the parent agent interprets repository shape, technologies, deployment boundaries, and existing terminology and creates only useful areas. The approved taxonomy is persisted for later runs. After bootstrap, `update` and `audit` reuse existing read-only profiles only for affected or selected macro-areas through the active host's native delegation mechanism; they never create persistent profiles. Before and after delegation, the parent verifies profile restrictions and working-tree integrity. Empty standard folders are not added merely for symmetry.
+The structure is adaptive: deterministic tooling inventories project evidence, while the parent agent interprets repository shape, technologies, deployment boundaries, and existing terminology and creates only useful areas. The approved taxonomy is persisted for later runs. After bootstrap, `update` and `audit` reuse existing read-only profiles only for affected or selected macro-areas through the active host's native delegation mechanism; they never create persistent profiles. `migrate` may create missing profiles when delegated ownership or mapping analysis requires them. Before and after delegation, the parent verifies profile restrictions and working-tree integrity. Empty standard folders are not added merely for symmetry.
 
 ```text
 project/

@@ -9,7 +9,7 @@ Write one profile per macro-area to `.github/agents/<area>-analyzer.agent.md`. N
 ```markdown
 ---
 name: <area>-analyzer
-description: Read-only analyzer for the <area> macro-area during documentation bootstrap.
+description: Read-only analyzer for the <area> macro-area during documentation bootstrap or migration.
 tools: [read, search]
 user-invocable: false
 disable-model-invocation: false

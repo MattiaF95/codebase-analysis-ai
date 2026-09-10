@@ -9,7 +9,7 @@ Write one profile per macro-area to `.gemini/agents/<area>-analyzer.md`. Normali
 ```markdown
 ---
 name: <area>-analyzer
-description: Read-only analyzer for the <area> macro-area during documentation bootstrap.
+description: Read-only analyzer for the <area> macro-area during documentation bootstrap or migration.
 kind: local
 tools:
   - read_file

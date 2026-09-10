@@ -1,6 +1,6 @@
 # Subagent contract
 
-Use one independent analyzer per approved, delegable source macro-area during `bootstrap`. When at least two independent macro-areas each contain at least 15 relevant files, profile creation and delegation for those areas are mandatory. During `update`, use one existing analyzer for each approved impacted macro-area; during a targeted `audit`, use one for each approved selected area; during a full `audit`, use one for every approved detected area. `migrate` may use existing profiles only for unresolved source ownership or cross-area mapping. A small or overlapping area may remain parent-only. All modes must remain read-only for analyzers and must not create agent files outside `bootstrap`.
+Use `references/analyzer-profile-policy.md` for profile creation, reuse, delegation, validation, and fallback in `bootstrap` and `migrate`. During `bootstrap`, use one independent analyzer per approved, delegable source macro-area; during `update`, reuse one existing analyzer for each approved impacted macro-area; during a targeted `audit`, reuse one for each approved selected area; during a full `audit`, reuse one for every approved detected area; and during `migrate`, use one for each area requiring delegated ownership or mapping analysis. A small or overlapping area may remain parent-only. Analyzer execution remains read-only; profile creation is a parent orchestration action governed by the shared policy and is not allowed in `update` or `audit`.
 
 ## Reuse and safety checks
 
@@ -8,7 +8,7 @@ The parent invokes profiles through the active host's native mechanism; this con
 
 ## Invocation brief
 
-The parent must pass the complete brief directly to each analyzer. Allowed paths come from the user-approved, agent-derived taxonomy persisted during bootstrap, never directly from detector output. Include:
+The parent must pass the complete brief directly to each analyzer. Allowed paths come from a user-approved, parent-derived taxonomy or migration area mapping, persisted during bootstrap when available, never directly from detector output. Include:
 
 - `area`, allowed repository-relative paths, and excluded paths;
 - evidence questions, documentation facets, and the already resolved documentation language;
@@ -75,7 +75,7 @@ The parent must preserve, validate, prioritize, and merge `findings` before writ
 
 Reject a report when it is not valid JSON, names the wrong area, cites paths outside the allowed scope, or provides claims without sources. Retry one malformed report once; after a second failure, record the native invocation failure and perform the same analysis sequentially in the parent.
 
-The parent resolves duplicate flows and terminology, maps evidence to documentation topics, validates cross-area claims against all relevant areas, and alone writes documentation. Do not pass one analyzer's conclusions to another. Initial absence of a profile is a fallback only after the user-approved delegation plan is recorded and profile creation fails. In later modes, missing or stale profiles are explicit fallback reasons and must be reported.
+The parent resolves duplicate flows and terminology, maps evidence to documentation topics, validates cross-area claims against all relevant areas, and alone writes documentation. Do not pass one analyzer's conclusions to another. Initial absence of a profile is a fallback only after the user-approved delegation plan is recorded and the applicable profile creation attempt fails. In `bootstrap` and `migrate`, missing profiles must be created when required by the shared policy; in `update` and `audit`, missing or stale profiles are explicit fallback reasons and must be reported.
 
 ## Delegation decision
 
@@ -85,4 +85,4 @@ Use exactly three user-facing policies:
 - `selective`: the parent keeps small, cross-cutting, or overlapping areas and delegates large independent areas. This is the only mixed policy.
 - `all`: delegate every safely separable area; the parent still validates, merges, resolves cross-area claims, and writes documentation.
 
-After bounded read-only discovery and before substantive analysis, recommend one policy with a brief motivation based on area size, independence, overlap, host capability, and expected context cost. Show a per-area assignment for `selective` or `all`, then include the choice in the single initial confirmation. Do not use `recommended` as a policy name. A user-selected policy changes delegation only; it must not reduce documentation scope.
+After bounded read-only discovery and before substantive analysis, recommend one policy with a brief motivation based on area size, independence, overlap, host capability, and expected context cost. Show a per-area assignment for `selective` or `all`, list the host-native paths of profiles planned for creation, then include the choice in the single initial confirmation. Do not use `recommended` as a policy name. A user-selected policy changes delegation only; it must not reduce documentation scope. An explicit `parent-only` choice suppresses profile creation and analyzer delegation even above the file-count threshold.
