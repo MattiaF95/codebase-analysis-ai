@@ -23,8 +23,9 @@ Do not write files, propose code fixes, access excluded paths, or delegate to an
 
 ## Discovery and invocation
 
-- No feature flag is required. Ask Codex directly to spawn `<area>-analyzer` with the self-contained brief.
-- Run independent analyzers in parallel within the host concurrency limit, then wait for every dispatched result before merging.
-- If profile creation or native invocation fails explicitly, record the error and use the sequential fallback defined in `subagent-contract.md`.
+- Capability preflight: verify that the current Codex session exposes the subagent spawn mechanism. No feature flag is required. If the mechanism is not exposed, record `native-unavailable` and use the parent fallback immediately.
+- Ask Codex directly to spawn `<area>-analyzer` with the self-contained brief.
+- Run independent analyzers in parallel within the host concurrency limit, then wait for every dispatched result or its bounded invocation deadline before merging.
+- If the capability preflight reports the native mechanism unavailable, or profile creation or native invocation fails or times out, record the cause and use the sequential fallback defined in `subagent-contract.md`.
 
 Source: [Codex subagents](https://developers.openai.com/codex/subagents).

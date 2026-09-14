@@ -6,7 +6,7 @@ import subprocess
 import stat
 from pathlib import Path
 
-from .documentation_map import MapError, load_map
+from .documentation_map import MapError, load_map, normalize_repository_path, resolve_repository_path
 from .documentation_preflight import first_documentation_file
 from .source_hashes import sha256_file
 
@@ -78,7 +78,9 @@ def _runtime_state(root: Path) -> str:
         return "unmanaged"
     source_scripts = Path(__file__).resolve().parent.parent
     source_check = source_scripts / "codebase_analysis_ai.py"
-    if source_check.is_file() and source_check.read_bytes() != check.read_bytes():
+    if source_scripts.resolve() == target.resolve() or not source_check.is_file():
+        return "unverified"
+    if source_check.read_bytes() != check.read_bytes():
         return "outdated"
     source_package = source_scripts / "codebase_analysis_ai"
     installed_package = target / "codebase_analysis_ai"
@@ -149,14 +151,19 @@ def inspect_setup(root: Path, agents: list[str]) -> dict[str, object]:
         try:
             documentation_map = load_map(root)
             errors = documentation_map.validate()
-            missing = [document.get("path") for document in documentation_map.documents.values()
-                       if document.get("path") and not (root / document["path"]).is_file()]
-            stale = []
-            for document in documentation_map.documents.values():
-                for source_path, recorded in document.get("sourceHashes", {}).items():
-                    source = root / source_path
-                    if sha256_file(source) != recorded:
-                        stale.append(source_path)
+            missing: list[str] = []
+            stale: list[str] = []
+            if not errors:
+                missing = [
+                    normalize_repository_path(document["path"])
+                    for document in documentation_map.documents.values()
+                    if document.get("path") and not resolve_repository_path(root, document["path"]).is_file()
+                ]
+                for document in documentation_map.documents.values():
+                    for source_path, recorded in document.get("sourceHashes", {}).items():
+                        normalized = normalize_repository_path(source_path)
+                        if sha256_file(resolve_repository_path(root, normalized)) != recorded:
+                            stale.append(normalized)
             docs["state"] = "incoherent" if errors or missing else "stale" if stale else "coherent"
             docs["mapErrors"] = errors
             docs["missingDocuments"] = missing

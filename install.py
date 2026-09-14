@@ -17,6 +17,7 @@ from codebase_analysis_ai.project_installer import install_project_components  #
 
 
 AGENTS = ("codex", "claude", "gemini", "copilot")
+MANAGED_SKILL_MARKER = "name: codebase-analysis-ai"
 
 
 def destination(agent: str, scope: str, project_root: Path) -> Path:
@@ -31,10 +32,37 @@ def destination(agent: str, scope: str, project_root: Path) -> Path:
 
 
 def install_skill(target: Path) -> None:
-    target.parent.mkdir(parents=True, exist_ok=True)
+    source_files = [
+        source
+        for source in SKILL_SOURCE.rglob("*")
+        if source.is_file() and "__pycache__" not in source.parts and source.suffix != ".pyc"
+    ]
+    if target.is_symlink():
+        raise RuntimeError(f"Refusing to replace symlinked skill target: {target}")
     if target.exists():
-        shutil.rmtree(target)
-    shutil.copytree(SKILL_SOURCE, target, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        if not target.is_dir():
+            raise RuntimeError(f"Refusing to replace non-directory skill target: {target}")
+        marker = target / "SKILL.md"
+        if marker.is_symlink() or not marker.is_file() or MANAGED_SKILL_MARKER not in marker.read_text(
+            encoding="utf-8", errors="replace"
+        ):
+            raise RuntimeError(f"Refusing to update unmanaged skill target: {target}")
+    for source in source_files:
+        destination_path = target / source.relative_to(SKILL_SOURCE)
+        if destination_path.is_symlink() or (destination_path.exists() and not destination_path.is_file()):
+            raise RuntimeError(f"Refusing to replace non-file skill target: {destination_path}")
+        for parent in destination_path.parents:
+            if parent == target:
+                break
+            if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+                raise RuntimeError(f"Refusing to replace non-directory skill target: {parent}")
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.mkdir(parents=True, exist_ok=True)
+    for source in source_files:
+        destination_path = target / source.relative_to(SKILL_SOURCE)
+        destination_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination_path)
 
 
 def main() -> int:

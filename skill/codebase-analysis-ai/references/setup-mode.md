@@ -10,7 +10,9 @@ Use setup mode after an explicit setup request or after the user confirms a setu
 4. Explain that hooks enforce local checks and the GitHub Action provides shared pull-request, merge-queue, and default-branch checks. Ask for confirmation even when all components already exist; a no-change proposal is valid.
 5. Run setup discovery and installation with the current bundled skill command so an outdated project runtime cannot validate or refresh itself. After confirmation, run from the target repository root:
 
-   `python <installed-skill-root>/scripts/codebase_analysis_ai.py --root . install --agents <active-host>`
+   `python3 <installed-skill-root>/scripts/codebase_analysis_ai.py --root . install --agents <active-host>`
+
+   On Windows, use `py -3` in place of `python3`.
 
    The command creates missing components and refreshes outdated managed components. It never replaces unmanaged runtime, hooks, workflows, agent instructions, or unrelated automation.
 6. Preflight runtime ownership, unexpected installed runtime files, every selected agent target, every hook, the workflow, and `core.hooksPath` before the first setup write. Stop on any unrecognized conflict and request a revised plan. Do not invent chaining or framework integration without repository evidence.

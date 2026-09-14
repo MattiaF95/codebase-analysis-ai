@@ -207,18 +207,44 @@ def rewrite_changes(root: Path, lines: Iterable[str]) -> list[Change]:
     return _deduplicate(changes)
 
 
+def _event_string(event: object, *keys: str) -> str:
+    current = event
+    for key in keys:
+        if not isinstance(current, dict) or key not in current:
+            raise GitError(f"invalid CI event: missing {'.'.join(keys)}")
+        current = current[key]
+    if not isinstance(current, str) or not current:
+        raise GitError(f"invalid CI event: {'.'.join(keys)} must be a non-empty string")
+    return current
+
+
 def ci_event_changes(root: Path, event_name: str, event_path: Path) -> list[Change]:
-    event = json.loads(event_path.read_text(encoding="utf-8"))
+    try:
+        event = json.loads(event_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise GitError(f"invalid CI event payload: {exc}") from exc
+    if not isinstance(event, dict):
+        raise GitError("invalid CI event: payload must be an object")
     if event_name == "pull_request":
-        return range_changes(root, event["pull_request"]["base"]["sha"], event["pull_request"]["head"]["sha"])
+        return range_changes(
+            root,
+            _event_string(event, "pull_request", "base", "sha"),
+            _event_string(event, "pull_request", "head", "sha"),
+        )
     if event_name == "push":
         base = event.get("before")
+        head = _event_string(event, "after")
+        if base is not None and not isinstance(base, str):
+            raise GitError("invalid CI event: before must be a string")
         if not base or base == ZERO_SHA:
-            return root_history_changes(root, event.get("after", "HEAD"))
-        return range_changes(root, base, event.get("after", "HEAD"))
+            return root_history_changes(root, head)
+        return range_changes(root, base, head)
     if event_name == "merge_group":
-        group = event["merge_group"]
-        return range_changes(root, group.get("base_sha"), group["head_sha"])
+        return range_changes(
+            root,
+            _event_string(event, "merge_group", "base_sha"),
+            _event_string(event, "merge_group", "head_sha"),
+        )
     return range_changes(root, None, "HEAD")
 
 

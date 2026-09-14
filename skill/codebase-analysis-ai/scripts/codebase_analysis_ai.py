@@ -8,7 +8,12 @@ import json
 import sys
 from pathlib import Path
 
-from codebase_analysis_ai.documentation_map import MapError, load_map
+from codebase_analysis_ai.documentation_map import (
+    MapError,
+    load_map,
+    normalize_repository_path,
+    resolve_repository_path,
+)
 from codebase_analysis_ai.documentation_preflight import first_documentation_file
 from codebase_analysis_ai.document_validator import validate_documents
 from codebase_analysis_ai.git_changes import (
@@ -64,14 +69,14 @@ def command_check(args: argparse.Namespace) -> int:
     for path in changed_paths:
         if path in impact.changed_documents:
             continue
-        current = sha256_file(root / path)
+        current = sha256_file(resolve_repository_path(root, path))
         for doc_id in documentation_map.matching_documents(path):
-            recorded = documentation_map.documents[doc_id].get("sourceHashes", {}).get(path)
+            recorded = documentation_map.recorded_hash(doc_id, path)
             if recorded != current:
                 stale.append(f"{path} -> {doc_id}")
 
     document_paths = [
-        documentation_map.documents[doc_id]["path"]
+        normalize_repository_path(documentation_map.documents[doc_id]["path"])
         for doc_id in impact.all_documents
         if doc_id in documentation_map.documents and documentation_map.documents[doc_id].get("path")
     ]
@@ -110,14 +115,13 @@ def command_check(args: argparse.Namespace) -> int:
 def command_refresh(args: argparse.Namespace) -> int:
     root = _root(args.root)
     documentation_map = load_map(root)
-    selected = [path.replace("\\", "/") for path in args.paths]
+    selected = [normalize_repository_path(path) for path in args.paths]
     if not selected:
         selected = change_paths(working_tree_changes(root))
     refreshed: list[str] = []
     for path in selected:
         for doc_id in documentation_map.matching_documents(path):
-            hashes = documentation_map.documents[doc_id].setdefault("sourceHashes", {})
-            hashes[path] = sha256_file(root / path)
+            documentation_map.set_recorded_hash(doc_id, path, sha256_file(resolve_repository_path(root, path)))
             refreshed.append(f"{path} -> {doc_id}")
     documentation_map.save()
     print(json.dumps({"refreshed": sorted(set(refreshed))}, indent=2))

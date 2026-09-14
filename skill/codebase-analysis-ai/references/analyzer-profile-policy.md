@@ -27,11 +27,17 @@ Detect the active host, read exactly one matching host reference linked from `SK
 
 Before reuse or invocation, verify the managed marker, host syntax, explicit read-only restrictions, allowed paths, and current macro-area boundaries. Treat missing paths, unresolved placeholders, or changed boundaries as stale. Do not modify an existing profile automatically. Record the concrete cause and use the sequential parent fallback when a profile is stale, unsafe, unavailable, or its creation or invocation fails.
 
+## Capability preflight and bounded fallback
+
+Before attempting native delegation, perform the host-specific capability preflight required by the active host reference. If the native mechanism is not exposed, record `native-unavailable` and use the parent fallback immediately; do not wait for a delegation result that cannot be produced. If a native invocation starts but reaches the host's bounded deadline without a valid result, record `native-timeout` and use the same fallback.
+
+Do not retry an unavailable or timed-out invocation. Retain the existing single retry for a malformed report only when the host returned a response. Every fallback must preserve the approved area, documentation scope, findings taxonomy, evidence requirements, and read-only boundary, and must record the concrete cause and lost delegation guarantees.
+
 ## Invocation and merge
 
 Build a self-contained brief for every delegated analyzer with source scope, allowed and excluded paths, documentation facets, evidence questions, language, read-only boundary, recursion prohibition, and the complete JSON output contract from `subagent-contract.md`. Do not create profiles for inactive hosts or ask analyzers to locate the contract through a relative path.
 
-Refresh or restart host discovery only when required, then attempt native delegation for every approved brief. Use parallel delegation for independent areas when available. Retry one malformed report once. For each failed area, use parent analysis and record the concrete cause and lost guarantees.
+Refresh or restart host discovery only when required, then attempt native delegation for every approved brief after the capability preflight. Use parallel delegation for independent areas when available, bounded by the host concurrency limit and invocation deadline. Retry one malformed report once. For each failed area, use parent analysis and record the concrete cause and lost guarantees.
 
 Validate all reports before merging them. Reject claims without allowed-path evidence, preserve and merge every `finding`, prioritize critical and high severity findings, merge duplicate cross-area flows, map evidence to documentation topics, and keep unresolved contradictions under `To verify`. If a report contains truncation, inspect the omitted scope or request a continuation before considering the area covered.
 

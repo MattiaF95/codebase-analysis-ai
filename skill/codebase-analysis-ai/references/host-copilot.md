@@ -25,8 +25,9 @@ Keep `tools: [read, search]` explicit because omitted tools default to all avail
 
 ## Discovery and invocation
 
+- Capability preflight: verify that the active Copilot surface exposes custom-agent discovery and the native subagent tool. If either is unavailable, record `native-unavailable` and use the parent fallback immediately.
 - Copilot CLI: restart after creating a new profile, then instruct Copilot to use `<area>-analyzer` with the self-contained brief.
 - VS Code: ensure the `agent/runSubagent` tool is enabled for the parent request. This is a UI/runtime prerequisite that the skill cannot force; the persistent profile remains valid.
-- If the tool is disabled, profile discovery fails, or native invocation fails explicitly, record the cause and use the sequential fallback defined in `subagent-contract.md`.
+- If the tool is disabled, the capability preflight reports the native mechanism unavailable, profile discovery fails, or native invocation fails or times out, record the cause and use the sequential fallback defined in `subagent-contract.md`.
 
 Sources: [Copilot CLI custom agents](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-custom-agents-for-cli), [custom agent configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration), and [VS Code subagents](https://code.visualstudio.com/docs/agents/subagents).

@@ -50,6 +50,22 @@ class SetupStateTest(unittest.TestCase):
             module.write_text("outdated\n", encoding="utf-8")
             self.assertEqual("outdated", inspect_setup(root, ["codex"])["runtime"])
 
+    def test_installed_runtime_cannot_verify_itself(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            install_project_components(root, ["codex"], False, False, False)
+            installed = root / "tools" / "codebase-analysis-ai" / "check.py"
+
+            result = subprocess.run(
+                [sys.executable, str(installed), "--root", str(root), "setup-state", "--agents", "codex"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual("unverified", json.loads(result.stdout)["runtime"])
+
     def test_reports_runtime_with_unexpected_python_files_as_outdated(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

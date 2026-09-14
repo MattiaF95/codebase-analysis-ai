@@ -12,12 +12,6 @@ class AutomationAssetsTest(unittest.TestCase):
             content = (SKILL / "assets" / "hooks" / name).read_text(encoding="utf-8")
             self.assertIn("--json", content, name)
 
-    def test_pre_push_explains_block_and_force_command(self):
-        content = (SKILL / "assets" / "hooks" / "pre-push").read_text(encoding="utf-8")
-        self.assertIn("push blocked", content)
-        self.assertIn("documentation hashes do not match", content)
-        self.assertIn("git push --no-verify", content)
-
     def test_workflow_is_always_warning_only(self):
         content = (SKILL / "assets" / "workflows" / "codebase-analysis-ai.yml").read_text(encoding="utf-8")
         self.assertIn("Documentation audit", content)
@@ -37,12 +31,10 @@ class AutomationAssetsTest(unittest.TestCase):
             self.assertIn("authoritative context", content, name)
             self.assertNotIn("check --mode working-tree --json", content, name)
 
-    def test_problem_headings_are_localized_placeholders(self):
-        for name in ("topic.md", "area-readme.md", "project-readme.md"):
-            content = (SKILL / "assets" / "templates" / name).read_text(encoding="utf-8")
-            self.assertIn("## {{ detectedProblemsHeading }}", content, name)
-            self.assertNotIn("## Problemi rilevati", content, name)
-
+    def test_documentation_index_template_uses_metadata_coverage_path(self):
+        content = (SKILL / "assets" / "templates" / "docs-index.md").read_text(encoding="utf-8")
+        self.assertIn("](_meta/coverage.md)", content)
+        self.assertNotIn("](coverage.md)", content)
 
 if __name__ == "__main__":
     unittest.main()

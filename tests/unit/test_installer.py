@@ -9,11 +9,38 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "skill" / "codebase-analysis-ai" / "scripts"))
 
+import install as skill_distribution_installer  # noqa: E402
 from codebase_analysis_ai import project_installer  # noqa: E402
 from codebase_analysis_ai.project_installer import START, update_managed_block, install_project_components  # noqa: E402
 
 
 class InstallerTest(unittest.TestCase):
+    def test_skill_update_preserves_extra_files_and_rejects_unmanaged_targets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            managed = root / "managed"
+            skill_distribution_installer.install_skill(managed)
+            extra = managed / "manual-note.md"
+            extra.write_text("keep\n", encoding="utf-8")
+            skill_file = managed / "SKILL.md"
+            skill_file.write_text(skill_file.read_text(encoding="utf-8") + "\noutdated\n", encoding="utf-8")
+
+            skill_distribution_installer.install_skill(managed)
+
+            self.assertEqual("keep\n", extra.read_text(encoding="utf-8"))
+            self.assertEqual(
+                (ROOT / "skill" / "codebase-analysis-ai" / "SKILL.md").read_text(encoding="utf-8"),
+                (managed / "SKILL.md").read_text(encoding="utf-8"),
+            )
+
+            unmanaged = root / "unmanaged"
+            unmanaged.mkdir()
+            custom = unmanaged / "custom.txt"
+            custom.write_text("keep\n", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "unmanaged skill target"):
+                skill_distribution_installer.install_skill(unmanaged)
+            self.assertEqual("keep\n", custom.read_text(encoding="utf-8"))
+
     def test_managed_block_is_idempotent(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "AGENTS.md"

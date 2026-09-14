@@ -52,7 +52,7 @@ The traversal stops after one relationship level. If source `A` maps to document
 
 ![Bootstrap macro-area analyzer orchestration](assets/bootstrap-orchestration.png)
 
-Profiles are created only during `bootstrap` or `migrate`, and only for areas approved for delegation. An explicit `parent-only` choice suppresses profile creation and delegation even above the threshold. Otherwise, when the two-area/15-file threshold is met, creation is mandatory; a profile creation or invocation failure triggers a recorded in-process fallback. `update` and `audit` reuse existing profiles only.
+Profiles are created only during `bootstrap` or `migrate`, and only for areas approved for delegation. An explicit `parent-only` choice suppresses profile creation and delegation even above the threshold. Otherwise, when the two-area/15-file threshold is met, creation is mandatory; a missing native capability, profile creation failure, invocation failure, or bounded timeout triggers a recorded in-process fallback. `update` and `audit` reuse existing profiles only.
 
 ## Modes
 
@@ -77,6 +77,8 @@ For requests to create documentation from zero, the default `existingDocumentati
 Canonical files that keep the same path, such as `README.md`, are rewritten in place; `archive` first preserves their original version. The archive is historical and excluded from the active index, documentation map, normal updates, and audits. `migrate` remains a separate structural operation, while `update` synchronizes impacted content with implementation evidence and preserves still-valid manual context.
 
 The documentation map identifies documents managed by Codebase Analysis AI through document IDs, source mappings, and source hashes. It does not prove that a document was originally created by the skill rather than adopted from an existing repository. Archiving or replacing existing documentation must therefore remain an explicit user decision.
+
+Document paths, source paths, and glob patterns in the map must be repository-relative and use forward slashes; absolute paths and `..` segments are invalid.
 
 After an update, the agent validates the changed documentation, refreshes hashes only for reviewed changed source paths, and reruns `check`.
 
@@ -110,9 +112,11 @@ These marks identify example host targets only. They are navigation aids and do 
 
 Clone this repository and run the installer from the target project:
 
+The examples use `python3`; on Windows, use `py -3` instead.
+
 ```bash
 git clone https://github.com/MattiaF95/codebase-analysis-ai.git
-python codebase-analysis-ai/install.py \
+python3 codebase-analysis-ai/install.py \
   --project-root /path/to/project \
   --agent all \
   --scope project
@@ -121,8 +125,8 @@ python codebase-analysis-ai/install.py \
 Install only the skill for a project or for the current user:
 
 ```bash
-python install.py --project-root /path/to/project --agent codex --scope project
-python install.py --agent codex --scope user
+python3 install.py --project-root /path/to/project --agent codex --scope project
+python3 install.py --agent codex --scope user
 ```
 
 The installer is idempotent, creates only missing skill components, preserves existing agent instructions, hooks, workflows, and unrelated automation, and never replaces unmanaged files. If the installed runtime contains unexpected Python files below `tools/codebase-analysis-ai/codebase_analysis_ai/`, setup reports the runtime as outdated and `install` stops with a conflict instead of deleting the files. During bootstrap or delegated migration, one project-level analyzer is mandatory for each of at least two independent macro-areas containing 15 or more relevant files unless the user explicitly selects `parent-only`.
@@ -142,27 +146,30 @@ Use codebase-analysis-ai setup to install agent rules, Git hooks, and the GitHub
 After installation, run the deterministic checker directly with:
 
 ```bash
-python tools/codebase-analysis-ai/check.py check --mode working-tree
+python3 tools/codebase-analysis-ai/check.py check --mode working-tree
 ```
 
-Inspect installed setup state before relying on a project-local runtime:
+Inspect setup state with the current bundled skill before relying on a project-local runtime:
 
 ```bash
-python tools/codebase-analysis-ai/check.py setup-state --agents codex
+python3 skill/codebase-analysis-ai/scripts/codebase_analysis_ai.py \
+  --root /path/to/project \
+  setup-state \
+  --agents codex
 ```
 
-`setup-state` reports runtime, agent adapters, hooks, the GitHub Action, and documentation-map coherence. Missing components are setup work; managed-but-different components are outdated; unmanaged or unexpected runtime files require an explicit cleanup or reinstall decision before `install` continues.
+`setup-state` reports runtime, agent adapters, hooks, the GitHub Action, and documentation-map coherence. Running it from the installed project runtime reports that runtime as `unverified`, because it has no independent bundled source to compare against. Missing components are setup work; managed-but-different components are outdated; unmanaged or unexpected runtime files require an explicit cleanup or reinstall decision before `install` continues.
 
 Before a full bootstrap, run the non-content preflight to detect existing text, markup, PDF, Office, OpenDocument, and other common documentation formats:
 
 ```bash
-python tools/codebase-analysis-ai/check.py docs-state
+python3 tools/codebase-analysis-ai/check.py docs-state
 ```
 
 Validate generated or changed managed documents with:
 
 ```bash
-python tools/codebase-analysis-ai/check.py validate-docs docs/index.md
+python3 tools/codebase-analysis-ai/check.py validate-docs docs/index.md
 ```
 
 `validate-docs` inspects only repository-contained Markdown paths. Explicit paths that resolve outside the Git root are rejected with `path escapes repository`; the validator does not read external files.
@@ -199,7 +206,7 @@ The skill never invents functionality, TODOs, commands, dependencies, or archite
 
 ## Generated documentation structure
 
-The structure is adaptive: deterministic tooling inventories project evidence, while the parent agent interprets repository shape, technologies, deployment boundaries, and existing terminology and creates only useful areas. The approved taxonomy is persisted for later runs. After bootstrap, `update` and `audit` reuse existing read-only profiles only for affected or selected macro-areas through the active host's native delegation mechanism; they never create persistent profiles. `migrate` may create missing profiles when delegated ownership or mapping analysis requires them. Before and after delegation, the parent verifies profile restrictions and working-tree integrity. Empty standard folders are not added merely for symmetry.
+The structure is adaptive: deterministic tooling inventories project evidence, while the parent agent interprets repository shape, technologies, deployment boundaries, and existing terminology and creates only useful areas. The approved taxonomy is persisted for later runs. After bootstrap, `update` and `audit` reuse existing read-only profiles only for affected or selected macro-areas through the active host's native delegation mechanism; unavailable or timed-out delegation falls back to the parent without skipping the area. They never create persistent profiles. `migrate` may create missing profiles when delegated ownership or mapping analysis requires them. Before and after delegation, the parent verifies profile restrictions and working-tree integrity. Empty standard folders are not added merely for symmetry.
 
 ```text
 project/
@@ -233,7 +240,7 @@ The installable skill lives under `skill/codebase-analysis-ai/`; the separate Py
 python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
-The tests verify structural inventory, mappings, one-level impact resolution, link validation, installer idempotency and rollback, runtime conflict reporting, validate-docs repository boundaries, language metadata, stale-source detection, and hash refreshes. Skill validation checks its structure and metadata. Live host tests are still required to verify profile discovery and delegation behavior across Codex, Claude Code, Gemini CLI, and GitHub Copilot.
+The tests verify structural inventory, mappings, one-level impact resolution, link validation, installer idempotency and rollback, runtime conflict reporting, validate-docs repository boundaries, language metadata, stale-source detection, and hash refreshes. Skill validation checks its structure and metadata.
 
 ## Repository structure
 

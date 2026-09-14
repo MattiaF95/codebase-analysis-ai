@@ -210,6 +210,71 @@ class ImpactGraphTest(unittest.TestCase):
         self.assertIn("taxonomy.sourceAreas.backend.evidence must be a non-empty string array", errors)
         self.assertIn("taxonomy.documentationTopics[0].sourceAreas must be a string array", errors)
 
+    def test_rejects_repository_escape_paths(self):
+        mapping = DocumentationMap(
+            Path("map.json"),
+            {
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "unsafe": {
+                        "path": "../outside.md",
+                        "sourcePatterns": ["../src/**"],
+                        "sourceHashes": {"/tmp/source.py": "hash"},
+                        "relatedDocuments": [],
+                    }
+                },
+            },
+        )
+
+        errors = mapping.validate()
+
+        self.assertTrue(any("unsafe.path" in error for error in errors))
+        self.assertTrue(any("unsafe.sourcePatterns" in error for error in errors))
+        self.assertTrue(any("unsafe.sourceHashes" in error for error in errors))
+
+    def test_rejects_external_settings_patterns(self):
+        mapping = DocumentationMap(
+            Path("map.json"),
+            {
+                "schemaVersion": 1,
+                "settings": {
+                    "ignorePatterns": ["../outside/**"],
+                    "auditOnlyPatterns": ["/tmp/audit/**"],
+                },
+                "documents": {},
+            },
+        )
+
+        errors = mapping.validate()
+
+        self.assertTrue(any("settings.ignorePatterns[0]" in error for error in errors))
+        self.assertTrue(any("settings.auditOnlyPatterns[0]" in error for error in errors))
+
+    def test_normalizes_windows_source_hash_keys(self):
+        mapping = DocumentationMap(
+            Path("map.json"),
+            {
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "backend": {
+                        "path": "docs/backend.md",
+                        "sourcePatterns": [],
+                        "sourceHashes": {"src\\Service.py": "old"},
+                        "relatedDocuments": [],
+                    }
+                },
+            },
+        )
+
+        self.assertEqual({"backend"}, mapping.matching_documents("src/Service.py"))
+        self.assertEqual("old", mapping.recorded_hash("backend", "src/Service.py"))
+
+        mapping.set_recorded_hash("backend", "src/Service.py", "new")
+
+        self.assertEqual({"src/Service.py": "new"}, mapping.documents["backend"]["sourceHashes"])
+
 
 if __name__ == "__main__":
     unittest.main()

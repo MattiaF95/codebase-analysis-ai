@@ -28,8 +28,9 @@ Do not modify files, propose code fixes, access excluded paths, or delegate to a
 
 ## Discovery and invocation
 
+- Capability preflight: verify that the current Gemini CLI session exposes `/agents` discovery and native agent invocation. If either mechanism is unavailable, record `native-unavailable` and use the parent fallback immediately.
 - Subagents are enabled by default. Do not add the obsolete `experimental.enableSubagents` setting. If `experimental.enableAgents` is explicitly `false`, report the disabled capability instead of silently changing user settings.
 - Run `/agents refresh` (alias of `/agents reload`), verify with `/agents list`, then invoke explicitly as `@<area>-analyzer <brief>`. `/agents enable <name>` and `/agents disable <name>` control individual profiles.
-- If refresh, discovery, or invocation fails explicitly, record the error and use the sequential fallback defined in `subagent-contract.md`.
+- If the capability preflight reports the native mechanism unavailable, or refresh, discovery, or invocation fails or times out explicitly, record the cause and use the sequential fallback defined in `subagent-contract.md`.
 
 Sources: [Gemini CLI subagents](https://github.com/google-gemini/gemini-cli/blob/main/docs/core/subagents.md), [commands](https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/commands.md), and [tools](https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/tools.md).

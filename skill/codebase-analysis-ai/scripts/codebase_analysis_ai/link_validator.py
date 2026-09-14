@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Iterable
 from urllib.parse import unquote, urlsplit
 
+from .documentation_map import MapError, resolve_repository_path
+
 
 REFERENCE_DEFINITION = re.compile(r"(?m)^[ ]{0,3}\[([^\]]+)\]:[ \t]*(<[^>]*>|\S+).*$")
 
@@ -175,7 +177,11 @@ def validate_links(root: Path, markdown_paths: Iterable[str]) -> list[str]:
     errors: list[str] = []
     root = root.resolve()
     for relative in sorted(set(markdown_paths)):
-        document = root / relative
+        try:
+            document = resolve_repository_path(root, relative)
+        except MapError as exc:
+            errors.append(f"Invalid document path: {exc}")
+            continue
         if not document.is_file():
             errors.append(f"Missing document: {relative}")
             continue

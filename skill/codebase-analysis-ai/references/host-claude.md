@@ -24,8 +24,9 @@ Do not modify files, propose code fixes, access excluded paths, or delegate to a
 
 ## Discovery and invocation
 
+- Capability preflight: verify that the current Claude Code session exposes the native subagent mechanism. If it is not exposed, record `native-unavailable` and use the parent fallback immediately.
 - Refer to `<area>-analyzer` explicitly in the prompt or through an @-mention when available.
 - Claude Code normally watches existing agent directories. Restart only when the session created its first `.claude/agents/` directory or directory watching is disabled.
-- If discovery or invocation fails after the required restart, record the error and use the sequential fallback defined in `subagent-contract.md`.
+- If the capability preflight reports the native mechanism unavailable, or discovery or invocation fails or times out after the required restart, record the cause and use the sequential fallback defined in `subagent-contract.md`.
 
 Source: [Claude Code subagents](https://code.claude.com/docs/en/sub-agents).

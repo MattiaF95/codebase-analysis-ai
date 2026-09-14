@@ -138,6 +138,20 @@ class GitChangesTest(unittest.TestCase):
 
             self.assertEqual(["root.py"], paths(ci_event_changes(root, "workflow_dispatch", event)))
 
+    def test_malformed_ci_events_raise_controlled_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._repository(directory)
+            self._commit(root, "root.py", "root\n", "root")
+            event = root / "event.json"
+            event.write_text("{invalid", encoding="utf-8")
+
+            with self.assertRaisesRegex(GitError, "invalid CI event payload"):
+                ci_event_changes(root, "pull_request", event)
+
+            event.write_text(json.dumps({"pull_request": {"base": {}}}), encoding="utf-8")
+            with self.assertRaisesRegex(GitError, "missing pull_request.base.sha"):
+                ci_event_changes(root, "pull_request", event)
+
 
 if __name__ == "__main__":
     unittest.main()

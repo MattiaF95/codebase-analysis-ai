@@ -4,7 +4,7 @@ Use `references/analyzer-profile-policy.md` for profile creation, reuse, delegat
 
 ## Reuse and safety checks
 
-The parent invokes profiles through the active host's native mechanism; this contract does not assume a host-neutral dispatcher. Before invocation, verify the managed marker, valid host syntax, explicit read-only tool restrictions, resolved allowed paths, and current macro-area boundaries. Treat a failed check as a stale profile and use the sequential parent fallback without editing the profile. Capture the working-tree status before delegation and compare it after the batch; any analyzer-created change is a read-only violation and must stop the batch.
+The parent invokes profiles through the active host's native mechanism; this contract does not assume a host-neutral dispatcher. Before invocation, verify the host capability, managed marker, valid host syntax, explicit read-only tool restrictions, resolved allowed paths, and current macro-area boundaries. Treat an unavailable capability or failed check as a fallback condition and use the sequential parent fallback without editing the profile. A native call that reaches the host's bounded deadline without a valid result is also a fallback condition. Capture the working-tree status before delegation and compare it after the batch; any analyzer-created change is a read-only violation and must stop the batch.
 
 ## Invocation brief
 

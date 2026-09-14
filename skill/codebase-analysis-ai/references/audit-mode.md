@@ -8,7 +8,7 @@ For a targeted audit, reuse existing read-only profiles only for user-approved s
 
 Each analyzer receives a self-contained brief with its allowed and excluded paths, audit scope, documentation facets, documentation language, evidence questions, read-only/no-recursion rules, and the complete JSON contract. The parent validates reports, preserves and prioritizes `findings`, maps them to documentation topics, merges cross-area findings, and produces the final read-only audit report. When working parent-only, use the same findings taxonomy and truncation rules. Missing profiles, discovery failures, or malformed reports use the documented sequential fallback and are reported.
 
-For an explicitly full audit, also read `subagent-contract.md`. Use existing host profiles or temporary runtime workers when delegation is available, but do not create or modify persistent profiles in audit mode.
+For an explicitly full audit, also read `subagent-contract.md`. Reuse existing host profiles when delegation is available; otherwise use the documented sequential parent fallback. Do not create or modify profiles in audit mode.
 
 ## Procedure
 

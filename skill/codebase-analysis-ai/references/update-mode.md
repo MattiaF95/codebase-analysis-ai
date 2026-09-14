@@ -8,7 +8,7 @@ After the deterministic checker resolves changed files and impacted documents, m
 
 Pass each analyzer a self-contained brief containing the narrowed changed paths, allowed and excluded paths, impacted documents, documentation facets, evidence questions, documentation language, read-only boundary, no-recursion rule, and the complete JSON contract from `references/subagent-contract.md`. The analyzer reports evidence, findings, and documentation implications only. The parent validates every source path and report, preserves and prioritizes `findings`, resolves cross-area duplicates, maps evidence to documentation topics, and alone writes documentation. Apply the same findings taxonomy and truncation rules when no analyzer is invoked.
 
-If a profile is missing, stale, unmanaged, undiscoverable, or invocation fails, record the concrete reason and perform the same area's analysis sequentially in the parent context. Do not skip the area and do not create a replacement profile during `update`. If no documentation is impacted, do not invoke any analyzer.
+If a profile is missing, stale, unmanaged, undiscoverable, native delegation is unavailable, invocation times out, or invocation fails, record the concrete reason and perform the same area's analysis sequentially in the parent context. Do not skip the area and do not create a replacement profile during `update`. If no documentation is impacted, do not invoke any analyzer.
 
 ## Procedure
 

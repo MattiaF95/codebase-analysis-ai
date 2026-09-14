@@ -51,7 +51,7 @@ Use `docs/_meta/state.json` for checker schema version and optional informationa
 
 Use a BCP 47 language tag such as `en`, `it`, or `pt-BR` for `documentationLanguage`. Set `languageDecisionSource` to `user`, `repository-policy`, or `existing-canonical-docs`. Do not guess either value when evidence is missing.
 
-Document paths must be unique. Related IDs must exist. Source paths use repository-relative forward slashes.
+Document paths must be unique. Related IDs must exist. Document paths, source paths, and path patterns must remain inside the repository. Store them with repository-relative forward slashes; absolute paths and `..` segments are invalid.
 
 Every bootstrapped or migrated documentation set must register `docs/index.md` with the stable ID `documentation.index`. Give it no source patterns or source hashes so ordinary source changes do not fan out to every document. Its `relatedDocuments` may contain top-level active documents or area indexes. Maintain the index explicitly whenever the active documentation set or its navigation changes. Never register files below `docs/_archive/`.
 
