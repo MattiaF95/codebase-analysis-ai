@@ -4,7 +4,7 @@ Automation has three independent layers:
 
 1. Agent rules tell the active coding agent to run the checker after relevant changes.
 2. Git hooks provide local warnings and pre-push enforcement.
-3. GitHub Actions provide the shared PR, merge-queue, and default-branch gate.
+3. GitHub Actions provide a shared, warning-only audit for pull requests, merge queues, and default-branch pushes.
 
 The deterministic checker never invokes an AI model.
 
@@ -21,11 +21,11 @@ Install or refresh the managed block in the instruction file for each selected h
 ## Hooks
 
 - `post-commit`: warn after stale changes are committed.
-- `pre-push`: block only when unprocessed impact remains and print the reason plus the explicit `git push --no-verify` bypass command.
+- `pre-push`: block only when the documentation check reports errors and print the report details plus the explicit `git push --no-verify` bypass command.
 - `post-merge`: warn after merge-based pulls.
 - `post-rewrite`: warn after rebase, amend, or pull with rebase.
 
-Every hook invokes the checker with `--json`. When an agent runs a Git command and any hook produces output or a non-zero status, the agent must stop the Git flow and preserve and analyze that complete JSON report as the authoritative execution context. A manually changed Markdown document is recorded as `changedDocuments` and accepted immediately as valid; preserve it and do not update documentation or source hashes automatically. It must never substitute a generic `working-tree` check after a commit or push attempt.
+Every hook invokes the checker with `--json`. When an agent runs a Git command and any hook produces output or a non-zero status, the agent must stop the Git flow and preserve and analyze that complete JSON report as the authoritative execution context. A manually changed Markdown document is recorded as `changedDocuments`; its links are still validated, while its content and source hashes remain unchanged. It must never substitute a generic `working-tree` check after a commit or push attempt.
 
 The agent may rerun `post-commit` with `python3 tools/codebase-analysis-ai/check.py check --mode post-commit --head HEAD --json` (`py -3` on Windows) while `HEAD` is unchanged; omitting `--base` supports both root and later commits. For `pre-push`, `post-merge`, and `post-rewrite`, use the captured report because their original stdin or refs may no longer be reproducible. Do not continue with another Git operation until the relevant result is clean or the user explicitly accepts a warning-only result. Hook output is never irrelevant: warnings require analysis, and a failing `pre-push` blocks publication.
 
@@ -35,4 +35,4 @@ Store exactly these hooks under `.githooks`: `post-commit`, `pre-push`, `post-me
 
 Install `.github/workflows/codebase-analysis-ai.yml` with read-only contents permission. Cover Pull Request updates, merge groups, default-branch pushes, and manual dispatch. Do not add model credentials or automatic commits.
 
-Create the workflow when absent and refresh it when outdated and managed. The workflow always reports audit failures with an English warning and runs in warning-only mode; it never blocks the workflow. If the dedicated path is unmanaged, report the conflict and do not overwrite it. Other workflows do not prevent creating the dedicated workflow, and must never be modified.
+Create the workflow when absent and refresh it when outdated and managed. The workflow runs in warning-only mode and never blocks the workflow. It emits an English `::warning` annotation only when the JSON report contains at least one inconsistency; a clean run produces no annotation, and an unreadable report produces a warning without failing the job. If the dedicated path is unmanaged, report the conflict and do not overwrite it. Other workflows do not prevent creating the dedicated workflow, and must never be modified.

@@ -12,12 +12,43 @@ class AutomationAssetsTest(unittest.TestCase):
             content = (SKILL / "assets" / "hooks" / name).read_text(encoding="utf-8")
             self.assertIn("--json", content, name)
 
-    def test_workflow_is_always_warning_only(self):
+    def test_workflow_is_warning_only_and_annotates_only_incoherent_reports(self):
         content = (SKILL / "assets" / "workflows" / "codebase-analysis-ai.yml").read_text(encoding="utf-8")
         self.assertIn("Documentation audit", content)
         self.assertIn("--warn-only", content)
         self.assertNotIn("forced_push", content)
         self.assertNotIn("if [", content)
+        self.assertNotIn('echo "::warning', content)
+        self.assertIn("json.load", content)
+        self.assertIn("if problems:", content)
+        for key in (
+            "errors",
+            "mapErrors",
+            "linkErrors",
+            "staleMappings",
+            "unmappedFiles",
+            "missingDocuments",
+            "unregisteredDocuments",
+            "indexErrors",
+            "removedMappings",
+        ):
+            self.assertIn(f'"{key}"', content)
+
+    def test_pre_push_reports_the_check_outcome_without_assuming_stale_hashes(self):
+        content = (SKILL / "assets" / "hooks" / "pre-push").read_text(encoding="utf-8")
+        self.assertIn("documentation check reported one or more errors", content)
+        self.assertNotIn("documentation hashes do not match", content)
+        self.assertIn("git push --no-verify", content)
+
+    def test_repository_ci_runs_the_suite_on_supported_python_versions(self):
+        workflow = ROOT / ".github" / "workflows" / "ci.yml"
+        self.assertTrue(workflow.is_file())
+        content = workflow.read_text(encoding="utf-8")
+        self.assertIn("push:", content)
+        self.assertIn("pull_request:", content)
+        self.assertIn('"3.9"', content)
+        self.assertIn('"3.12"', content)
+        self.assertIn('python3 -m unittest discover -s tests -p "test_*.py"', content)
 
     def test_agent_adapters_preserve_hook_context(self):
         adapters = (

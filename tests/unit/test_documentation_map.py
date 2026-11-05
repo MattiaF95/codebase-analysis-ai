@@ -46,6 +46,19 @@ class DocumentationMapTest(unittest.TestCase):
             self.assertEqual([], documentation_map.validate())
             self.assertEqual([], list(documentation_issues(root, documentation_map).errors))
 
+    def test_legacy_audit_only_patterns_key_is_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            map_path = self._write_map(root, {})
+            data = json.loads(map_path.read_text(encoding="utf-8"))
+            data["settings"]["auditOnlyPatterns"] = ["/tmp/audit/**"]
+            map_path.write_text(json.dumps(data), encoding="utf-8")
+
+            documentation_map = load_map(root)
+
+            self.assertEqual([], documentation_map.validate())
+            self.assertIn("auditOnlyPatterns", documentation_map.settings)
+
     def test_active_documents_exempt_metadata_archives_and_non_markdown(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT / "skill" / "codebase-analysis-ai" / "scripts"))
 
 import install as skill_distribution_installer  # noqa: E402
 from codebase_analysis_ai import project_installer  # noqa: E402
-from codebase_analysis_ai.project_installer import START, update_managed_block, install_project_components  # noqa: E402
+from codebase_analysis_ai.project_installer import START, append_managed_block_if_missing, install_project_components  # noqa: E402
 
 
 class InstallerTest(unittest.TestCase):
@@ -48,8 +48,8 @@ class InstallerTest(unittest.TestCase):
             target = Path(directory) / "AGENTS.md"
             target.write_text("# Existing\n\nKeep this.\n", encoding="utf-8")
             block = f"{START}\nRule one.\n<!-- codebase-analysis-ai:end -->"
-            update_managed_block(target, block)
-            update_managed_block(target, block)
+            append_managed_block_if_missing(target, block)
+            append_managed_block_if_missing(target, block)
             content = target.read_text(encoding="utf-8")
             self.assertEqual(1, content.count(START))
             self.assertIn("Keep this.", content)

@@ -16,7 +16,7 @@ if $py "$checker" check --mode pre-push --read-pre-push-stdin --json; then
   exit 0
 fi
 
-echo "Codebase Analysis AI: push blocked because documentation hashes do not match the current source files." >&2
-echo "Reason details are available in the JSON report above." >&2
+echo "Codebase Analysis AI: push blocked because the documentation check reported one or more errors." >&2
+echo "The JSON report above contains the reason details." >&2
 echo "To force this push, run: git push --no-verify" >&2
 exit 1

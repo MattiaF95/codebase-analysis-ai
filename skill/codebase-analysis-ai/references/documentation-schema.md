@@ -8,8 +8,7 @@ Store machine-readable metadata in `docs/_meta/documentation-map.json`.
   "settings": {
     "documentationLanguage": "en",
     "languageDecisionSource": "existing-canonical-docs",
-    "ignorePatterns": ["**/node_modules/**", "**/target/**"],
-    "auditOnlyPatterns": ["**/test/**", "**/*.spec.ts"]
+    "ignorePatterns": ["**/node_modules/**", "**/target/**"]
   },
   "taxonomy": {
     "sourceAreas": {
@@ -47,7 +46,7 @@ Store machine-readable metadata in `docs/_meta/documentation-map.json`.
 }
 ```
 
-Use `docs/_meta/state.json` for checker schema version and optional informational Git baselines. Never use state alone to mark documentation current.
+`docs/_meta/state.json` is optional and purely informational: it may hold a checker schema version and Git baselines, but it is not required for bootstrap or migrate and is never used alone to declare documentation current. The documentation map and the checker report are authoritative.
 
 Use a BCP 47 language tag such as `en`, `it`, or `pt-BR` for `documentationLanguage`. Set `languageDecisionSource` to `user`, `repository-policy`, or `existing-canonical-docs`. Do not guess either value when evidence is missing.
 

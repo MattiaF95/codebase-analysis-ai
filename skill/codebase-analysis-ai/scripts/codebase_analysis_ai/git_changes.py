@@ -74,19 +74,24 @@ def repository_root(path: Path) -> Path:
     return Path(output.strip()).resolve()
 
 
-def _parse_name_status(output: str) -> list[Change]:
-    changes: list[Change] = []
-    for line in output.splitlines():
-        if not line.strip():
-            continue
-        parts = line.split("\t")
-        status_code = parts[0]
-        status = status_code[0]
-        if status in {"R", "C"} and len(parts) >= 3:
-            changes.append(Change(path=parts[2], old_path=parts[1], status=status))
-        elif len(parts) >= 2:
-            changes.append(Change(path=parts[1], status=status))
-    return changes
+def default_branch(root: Path) -> str:
+    """Return the repository default branch, falling back to main."""
+    for command in (
+        ["git", "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"],
+        ["git", "branch", "--show-current"],
+    ):
+        result = subprocess.run(
+            command,
+            cwd=root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        value = result.stdout.strip()
+        if value:
+            return value.removeprefix("origin/")
+    return "main"
 
 
 def _decode_path(value: bytes) -> str:

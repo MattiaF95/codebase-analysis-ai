@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import subprocess
 import stat
 from pathlib import Path
 
 from .documentation_map import MapError, load_map, normalize_repository_path, resolve_repository_path
 from .documentation_preflight import first_documentation_file
+from .git_changes import default_branch
 from .source_hashes import sha256_file
 
 
@@ -100,17 +100,6 @@ def _runtime_state(root: Path) -> str:
     return "managed"
 
 
-def _default_branch(root: Path) -> str:
-    for command in (
-        ["git", "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"],
-        ["git", "branch", "--show-current"],
-    ):
-        result = subprocess.run(command, cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
-        if result.stdout.strip():
-            return result.stdout.strip().removeprefix("origin/")
-    return "main"
-
-
 def inspect_setup(root: Path, agents: list[str]) -> dict[str, object]:
     root = root.resolve()
     skill_root = Path(__file__).resolve().parents[2]
@@ -142,7 +131,7 @@ def inspect_setup(root: Path, agents: list[str]) -> dict[str, object]:
     expected_action = None
     if has_assets:
         expected_action = (assets / "workflows" / "codebase-analysis-ai.yml").read_text(encoding="utf-8")
-        expected_action = expected_action.replace("__DEFAULT_BRANCH__", _default_branch(root))
+        expected_action = expected_action.replace("__DEFAULT_BRANCH__", default_branch(root))
     action = _file_state(root / ".github" / "workflows" / "codebase-analysis-ai.yml", expected_action)
 
     first_doc = first_documentation_file(root)

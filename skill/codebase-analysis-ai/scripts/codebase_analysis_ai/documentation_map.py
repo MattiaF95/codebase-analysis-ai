@@ -6,7 +6,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any, Iterable
+from typing import Any
 
 from .glob_patterns import glob_match
 from .path_filters import is_excluded_path
@@ -145,16 +145,15 @@ def _structure_errors(data: dict[str, Any]) -> list[str]:
     if not isinstance(settings, dict):
         errors.append("settings must be an object")
     else:
-        for key in ("ignorePatterns", "auditOnlyPatterns"):
-            value = settings.get(key, [])
-            if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
-                errors.append(f"settings.{key} must be a string array")
-            else:
-                for index, pattern in enumerate(value):
-                    try:
-                        normalize_repository_path(pattern)
-                    except MapError as exc:
-                        errors.append(f"settings.{key}[{index}]: {exc}")
+        value = settings.get("ignorePatterns", [])
+        if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+            errors.append("settings.ignorePatterns must be a string array")
+        else:
+            for index, pattern in enumerate(value):
+                try:
+                    normalize_repository_path(pattern)
+                except MapError as exc:
+                    errors.append(f"settings.ignorePatterns[{index}]: {exc}")
     documents = data.get("documents", {})
     if not isinstance(documents, dict):
         errors.append("documents must be an object")
@@ -476,14 +475,3 @@ def load_map(root: Path) -> DocumentationMap:
     if structure_errors:
         raise MapError("Invalid documentation map: " + "; ".join(structure_errors))
     return DocumentationMap(path=path, data=data)
-
-
-def create_empty_map(root: Path) -> DocumentationMap:
-    return DocumentationMap(
-        path=root / "docs" / "_meta" / "documentation-map.json",
-        data={
-            "schemaVersion": 1,
-            "settings": {"ignorePatterns": [], "auditOnlyPatterns": ["**/test/**", "**/*.spec.ts"]},
-            "documents": {},
-        },
-    )

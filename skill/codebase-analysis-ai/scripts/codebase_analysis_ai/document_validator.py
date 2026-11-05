@@ -17,8 +17,13 @@ FINDING_SEVERITIES = {"critical", "high", "medium", "low", "info"}
 FINDING_VERIFICATIONS = {"source-only", "test", "runtime", "external-state"}
 
 
+ABSOLUTE_PATH = re.compile(r"^(?:/|[A-Za-z]:/)")
+
+
 def _repository_relative_path(root: Path, requested: str) -> tuple[str, Path | None, str | None]:
     normalized = requested.replace("\\", "/")
+    if ABSOLUTE_PATH.match(normalized) or any(part == ".." for part in normalized.split("/")):
+        return normalized, None, f"{normalized}: path must be repository-relative"
     document = (root / normalized).resolve()
     try:
         relative = document.relative_to(root).as_posix()

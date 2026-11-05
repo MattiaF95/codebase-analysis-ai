@@ -76,4 +76,21 @@ class DocumentValidatorTest(unittest.TestCase):
 
             self.assertFalse(report["valid"])
             self.assertEqual([], report["documents"])
-            self.assertTrue(any("path escapes repository" in issue for issue in report["issues"]))
+            self.assertTrue(any("path must be repository-relative" in issue for issue in report["issues"]))
+
+    def test_rejects_absolute_paths_even_inside_repository(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            document = root / "docs" / "guide.md"
+            document.parent.mkdir()
+            document.write_text(
+                "<!-- codebase-analysis-ai:scope:start -->\nGuide scope.\n"
+                "<!-- codebase-analysis-ai:scope:end -->\n",
+                encoding="utf-8",
+            )
+
+            report = validate_documents(root, [str(document)])
+
+            self.assertFalse(report["valid"])
+            self.assertEqual([], report["documents"])
+            self.assertTrue(any("path must be repository-relative" in issue for issue in report["issues"]))

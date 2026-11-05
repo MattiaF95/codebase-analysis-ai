@@ -31,9 +31,42 @@ jobs:
 
       - name: Run documentation audit
         run: |
-          echo "::warning title=Documentation audit::Documentation consistency is reported as a warning and does not block this workflow. The audit result below contains the reason details."
+          report="$RUNNER_TEMP/codebase-analysis-ai-report.json"
           python3 tools/codebase-analysis-ai/check.py check \
             --mode ci \
             --event-name "$GITHUB_EVENT_NAME" \
             --event-path "$GITHUB_EVENT_PATH" \
-            --warn-only
+            --warn-only \
+            --json > "$report" || true
+          python3 - "$report" <<'PY'
+          import json
+          import sys
+
+          keys = (
+              "errors",
+              "mapErrors",
+              "linkErrors",
+              "staleMappings",
+              "unmappedFiles",
+              "missingDocuments",
+              "unregisteredDocuments",
+              "indexErrors",
+              "removedMappings",
+          )
+          try:
+              with open(sys.argv[1], encoding="utf-8") as stream:
+                  report = json.load(stream)
+          except (OSError, ValueError) as exc:
+              print(f"::warning title=Documentation audit::Audit report could not be read: {exc}")
+              raise SystemExit(0)
+          if not isinstance(report, dict):
+              print("::warning title=Documentation audit::Audit report is not a JSON object.")
+              raise SystemExit(0)
+          problems = [key for key in keys if report.get(key)]
+          if problems:
+              print(
+                  "::warning title=Documentation audit::Documentation inconsistencies were reported in: "
+                  + ", ".join(problems)
+                  + ". This audit is warning-only and does not block the workflow."
+              )
+          PY

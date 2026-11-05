@@ -4,12 +4,12 @@ ANALYSIS: COMPLETE
 RETRIAGE: NO
 
 ## Agent execution header
-- `PLAN_STATUS: IN_PROGRESS`
+- `PLAN_STATUS: COMPLETE`
 - `EXECUTION_READINESS: READY`
 - `EXECUTION_SCOPE: FULL_PLAN`
-- `CURRENT_REQ: REQ-4.1.1`
-- `NEXT_ACTION: implement Phase 4 REQ-4.1.1, REQ-4.2.1 through REQ-4.2.3 and REQ-4.3.1, verify, review, and commit`
-- `COMPLETION_ALLOWED: NO`
+- `CURRENT_REQ: none`
+- `NEXT_ACTION: none; final review complete`
+- `COMPLETION_ALLOWED: YES`
 
 ## 1. Objective
 
@@ -94,17 +94,17 @@ Correggere le lacune del gate deterministico (`check`), le ambiguità dell'insta
 
 ### 6.1 Messaggi e workflow
 
-- [ ] REQ-4.1.1 Messaggi accurati: il pre-push riporta la causa reale senza affermare sempre “hash stale”; il workflow emette l'annotation di warning solo quando il report contiene almeno un'incoerenza e non ne emette in caso di successo; la documentazione non chiama più il workflow “gate” bloccante.
+- [x] REQ-4.1.1 Messaggi accurati: il pre-push riporta la causa reale senza affermare sempre “hash stale”; il workflow emette l'annotation di warning solo quando il report contiene almeno un'incoerenza e non ne emette in caso di successo; la documentazione non chiama più il workflow “gate” bloccante.
 
 ### 6.2 Contratti e manutenzione
 
-- [ ] REQ-4.2.1 Contratti morti rimossi: `auditOnlyPatterns` non è più validato né documentato, `state.json` è opzionale/informativo e non obbligatorio, e le mappe esistenti restano compatibili.
-- [ ] REQ-4.2.2 Pulizia e unificazione: rimozione di codice morto (`_parse_name_status`, `update_managed_block` non usato in produzione, `create_empty_map`) e delle fixture non referenziate; costanti e logica del default branch condivise tra setup e installer.
-- [ ] REQ-4.2.3 Documentazione allineata: README e reference descrivono fedelmente installer, `--warn-only`, `validate-docs` repository-relative, `setup-state`, supporto per tipologia di repository e versione minima Python; `validate-docs` rifiuta path assoluti e segmenti `..`.
+- [x] REQ-4.2.1 Contratti morti rimossi: `auditOnlyPatterns` non è più validato né documentato, `state.json` è opzionale/informativo e non obbligatorio, e le mappe esistenti restano compatibili.
+- [x] REQ-4.2.2 Pulizia e unificazione: rimozione di codice morto (`_parse_name_status`, `update_managed_block` non usato in produzione, `create_empty_map`) e delle fixture non referenziate; costanti e logica del default branch condivise tra setup e installer.
+- [x] REQ-4.2.3 Documentazione allineata: README e reference descrivono fedelmente installer, `--warn-only`, `validate-docs` repository-relative, `setup-state`, supporto per tipologia di repository e versione minima Python; `validate-docs` rifiuta path assoluti e segmenti `..`.
 
 ### 6.3 CI del repository
 
-- [ ] REQ-4.3.1 CI interna: un workflow del repository esegue la suite su Python 3.9 e 3.12 a ogni push e pull request; un test fallito blocca il workflow.
+- [x] REQ-4.3.1 CI interna: un workflow del repository esegue la suite su Python 3.9 e 3.12 a ogni push e pull request; un test fallito blocca il workflow.
 
 **Verifica fase**
 - Un run pulito del workflow non produce annotation; un run con link rotto sì.
@@ -124,13 +124,13 @@ Ogni fase produce un commit atomico solo dopo il completamento di tutti i suoi R
 
 ## 8. Exit criteria
 
-- [ ] Tutti i REQ-ID attivi sono `[x]` con la verifica di fase soddisfatta.
-- [ ] `python3 -m unittest discover -s tests -p "test_*.py"` passa su Python 3.9 e 3.12.
-- [ ] Le riproduzioni dell'analisi iniziale producono il nuovo esito atteso: docs-only con link rotto → errore; index cancellato → errore; documento non registrato → errore; pattern invalido con `--warn-only` → 0 con JSON; `package-lock.json` → ignorato; symlink esterno → rifiutato; runtime installato modificato → `unverified`.
-- [ ] Nessuna scrittura fuori dal repository è possibile tramite target symlink dell'installer.
-- [ ] Non restano riferimenti a contratti rimossi o fixture/codice morto.
-- [ ] Le affermazioni di README e reference sono coerenti con il comportamento osservato e coperte da test.
-- [ ] Nessuna nuova dipendenza esterna oltre a Git e standard library.
+- [x] Tutti i REQ-ID attivi sono `[x]` con la verifica di fase soddisfatta.
+- [x] `python3 -m unittest discover -s tests -p "test_*.py"` passa su Python 3.9 e 3.12.
+- [x] Le riproduzioni dell'analisi iniziale producono il nuovo esito atteso: docs-only con link rotto → errore; index cancellato → errore; documento non registrato → errore; pattern invalido con `--warn-only` → 0 con JSON; `package-lock.json` → ignorato; symlink esterno → rifiutato; runtime installato modificato → `unverified`.
+- [x] Nessuna scrittura fuori dal repository è possibile tramite target symlink dell'installer.
+- [x] Non restano riferimenti a contratti rimossi o fixture/codice morto.
+- [x] Le affermazioni di README e reference sono coerenti con il comportamento osservato e coperte da test.
+- [x] Nessuna nuova dipendenza esterna oltre a Git e standard library.
 
 ## 9. Risks and mitigations
 

@@ -259,7 +259,7 @@ class ImpactGraphTest(unittest.TestCase):
         self.assertTrue(any("unsafe.sourcePatterns" in error for error in errors))
         self.assertTrue(any("unsafe.sourceHashes" in error for error in errors))
 
-    def test_rejects_external_settings_patterns(self):
+    def test_rejects_external_settings_patterns_and_ignores_legacy_audit_patterns(self):
         mapping = DocumentationMap(
             Path("map.json"),
             {
@@ -275,7 +275,7 @@ class ImpactGraphTest(unittest.TestCase):
         errors = mapping.validate()
 
         self.assertTrue(any("settings.ignorePatterns[0]" in error for error in errors))
-        self.assertTrue(any("settings.auditOnlyPatterns[0]" in error for error in errors))
+        self.assertFalse(any("auditOnlyPatterns" in error for error in errors))
 
     def test_normalizes_windows_source_hash_keys(self):
         mapping = DocumentationMap(

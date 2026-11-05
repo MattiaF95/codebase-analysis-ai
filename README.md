@@ -129,7 +129,7 @@ python3 install.py --project-root /path/to/project --agent codex --scope project
 python3 install.py --agent codex --scope user
 ```
 
-The installer is idempotent, creates only missing skill components, preserves existing agent instructions, hooks, workflows, and unrelated automation, and never replaces unmanaged files. If the installed runtime contains unexpected Python files below `tools/codebase-analysis-ai/codebase_analysis_ai/`, setup reports the runtime as outdated and `install` stops with a conflict instead of deleting the files. During bootstrap or delegated migration, one project-level analyzer is mandatory for each of at least two independent macro-areas containing 15 or more relevant files unless the user explicitly selects `parent-only`.
+Python 3.9 or newer is required. The installer validates its targets in a read-only preflight before writing, applies the selected components transactionally, and restores files, permissions, and local Git configuration if a later step fails. It rejects targets and parent directories whose symlinks resolve outside the project root, is idempotent, creates missing managed components, refreshes outdated managed ones, preserves extra files and unrelated manual content, and never replaces unmanaged files. If the installed runtime contains unexpected Python files below `tools/codebase-analysis-ai/codebase_analysis_ai/`, setup reports the runtime as outdated and `install` stops with a conflict instead of deleting the files. During bootstrap or delegated migration, one project-level analyzer is mandatory for each of at least two independent macro-areas containing 15 or more relevant files unless the user explicitly selects `parent-only`.
 
 ## Usage
 
@@ -149,6 +149,8 @@ After installation, run the deterministic checker directly with:
 python3 tools/codebase-analysis-ai/check.py check --mode working-tree
 ```
 
+`check` exits non-zero when it finds documentation drift. Add `--json` for a machine-readable report on stdout, or `--warn-only` to keep every check failure non-blocking while still reporting it, including map, Git, and I/O errors.
+
 Inspect setup state with the current bundled skill before relying on a project-local runtime:
 
 ```bash
@@ -158,7 +160,7 @@ python3 skill/codebase-analysis-ai/scripts/codebase_analysis_ai.py \
   --agents codex
 ```
 
-`setup-state` reports runtime, agent adapters, hooks, the GitHub Action, and documentation-map coherence. Running it from the installed project runtime reports that runtime as `unverified`, because it has no independent bundled source to compare against. Missing components are setup work; managed-but-different components are outdated; unmanaged or unexpected runtime files require an explicit cleanup or reinstall decision before `install` continues.
+`setup-state` reports runtime, agent adapters, hooks, the GitHub Action, and documentation-map coherence. Running it from the installed project runtime reports that runtime as `unverified`, because it has no independent bundled source to compare against; adapter, hook, and workflow entries are also reported as `unverified` when the installed runtime has no corresponding assets to compare. Missing components are setup work; managed-but-different components are outdated; unmanaged or unexpected runtime files require an explicit cleanup or reinstall decision before `install` continues.
 
 Before a full bootstrap, run the non-content preflight to detect existing text, markup, PDF, Office, OpenDocument, and other common documentation formats:
 
@@ -172,7 +174,7 @@ Validate generated or changed managed documents with:
 python3 tools/codebase-analysis-ai/check.py validate-docs docs/index.md
 ```
 
-`validate-docs` inspects only repository-contained Markdown paths. Explicit paths that resolve outside the Git root are rejected with `path escapes repository`; the validator does not read external files.
+`validate-docs` accepts repository-relative Markdown paths only. Absolute paths, including paths inside the repository, and any path containing a `..` segment are rejected with `path must be repository-relative`; the validator does not read files outside the Git root.
 
 ## Automation
 
@@ -184,11 +186,11 @@ Hooks provide fast local feedback for commits, pushes, merges, rebases, and amen
 git config core.hooksPath .githooks
 ```
 
-The pre-push hook blocks publication when documentation hashes are stale and prints the reason plus `git push --no-verify` as the explicit bypass command. Manually changed Markdown documents are recorded as `changedDocuments` and accepted immediately as valid; their content and source hashes are not changed automatically. Hooks can be bypassed, so they are not the shared enforcement layer.
+The pre-push hook blocks publication when the documentation check reports one or more errors, prints the JSON report details, and shows `git push --no-verify` as the explicit bypass command. Manually changed Markdown documents are recorded as `changedDocuments`; their links are still validated, while their content and source hashes are not changed automatically. Hooks can be bypassed, so they are not the shared enforcement layer.
 
 ### GitHub Action
 
-The workflow checks pull request updates, merge queues through `merge_group`, merges, direct pushes to the default branch, and manually requested audits. It always reports documentation inconsistencies as an English warning with the audit reason and never fails the workflow. It uses `contents: read`, requires no model secrets, and creates no commits. Branch protection and required status checks must be enabled separately in repository settings.
+The workflow is a warning-only audit, not a blocking gate. It checks pull request updates, merge queues through `merge_group`, direct pushes to the default branch, and manually requested audits. It runs the checker with `--warn-only --json` and emits an English `::warning` annotation only when the report contains at least one inconsistency; a clean run produces no annotation. An unreadable report produces a warning without failing the job. It uses `contents: read`, requires no model secrets, and creates no commits. Enforce required checks separately in repository settings if a project wants a blocking policy.
 
 ## Documentation rules
 
@@ -234,13 +236,13 @@ The diagrams are illustrative. Actual generated paths and responsibilities depen
 
 ## Development and validation
 
-The installable skill lives under `skill/codebase-analysis-ai/`; the separate Python test suite under `tests/` is not copied into target projects.
+The installable skill lives under `skill/codebase-analysis-ai/`; the separate Python test suite under `tests/` is not copied into target projects. The minimum supported Python version is 3.9, and the repository CI runs the suite on Python 3.9 and 3.12 for every push and pull request through `.github/workflows/ci.yml`.
 
 ```bash
 python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
-The tests verify structural inventory, mappings, one-level impact resolution, link validation, installer idempotency and rollback, runtime conflict reporting, validate-docs repository boundaries, language metadata, stale-source detection, and hash refreshes. Skill validation checks its structure and metadata.
+The tests verify structural inventory, mappings, one-level impact resolution, link validation, installer preflight, idempotency and rollback, symlink containment, runtime conflict reporting, `setup-state` truthfulness, validate-docs repository-relative boundaries, language metadata, stale-source detection, hash refreshes, and the warning-only automation assets. Skill validation checks its structure and metadata.
 
 ## Repository structure
 

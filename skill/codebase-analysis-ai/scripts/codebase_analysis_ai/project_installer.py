@@ -9,6 +9,8 @@ import tempfile
 from pathlib import Path
 from typing import Iterable
 
+from .git_changes import default_branch
+
 
 START = "<!-- codebase-analysis-ai:start -->"
 END = "<!-- codebase-analysis-ai:end -->"
@@ -81,21 +83,6 @@ def _atomic_write_text(target: Path, content: str) -> None:
 
 def _atomic_copy(source: Path, target: Path) -> None:
     _atomic_write(target, source.read_bytes(), stat.S_IMODE(source.stat().st_mode))
-
-
-def update_managed_block(target: Path, block: str) -> str:
-    existing = target.read_text(encoding="utf-8") if target.exists() else ""
-    if START in existing and END in existing:
-        before, remainder = existing.split(START, 1)
-        _old, after = remainder.split(END, 1)
-        updated = before.rstrip() + "\n\n" + block.strip() + "\n" + after.lstrip("\n")
-        action = "updated"
-    else:
-        separator = "\n\n" if existing.strip() else ""
-        updated = existing.rstrip() + separator + block.strip() + "\n"
-        action = "created" if not existing else "updated"
-    _atomic_write_text(target, updated)
-    return action
 
 
 def append_managed_block_if_missing(target: Path, block: str) -> str | None:
@@ -302,19 +289,6 @@ def _copy_runtime(project_root: Path) -> list[str]:
     return changes
 
 
-def _detect_default_branch(project_root: Path) -> str:
-    commands = [
-        ["git", "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"],
-        ["git", "branch", "--show-current"],
-    ]
-    for command in commands:
-        result = subprocess.run(command, cwd=project_root, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
-        value = result.stdout.strip()
-        if value:
-            return value.removeprefix("origin/")
-    return "main"
-
-
 def _mutation_targets(
     project_root: Path,
     requested_agents: list[str],
@@ -458,7 +432,7 @@ def install_project_components(
             action = _copy_managed_file(
                 assets / "workflows" / "codebase-analysis-ai.yml",
                 workflow,
-                {"__DEFAULT_BRANCH__": _detect_default_branch(project_root)},
+                {"__DEFAULT_BRANCH__": default_branch(project_root)},
             )
             if action:
                 changes.append(".github/workflows/codebase-analysis-ai.yml")
