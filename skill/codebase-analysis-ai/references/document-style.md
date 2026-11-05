@@ -79,6 +79,28 @@ Place this machine-readable marker immediately before the finding. Keep `kind`, 
 
 Separate verified defects from risks, accepted design limitations, and unresolved questions. Never promote an inference to a bug without evidence. If no finding is supported, state that no problems were detected within the analyzed scope and explain what was not verified.
 
+## Document kinds and sections
+
+Every new document declares a `documentKind` in `docs/_meta/documentation-map.json`. The runtime catalog in `scripts/codebase_analysis_ai/document_kinds.py` defines the supported kinds, their required and recommended section keys, lifecycle, index policy, default location, and whether source patterns are required. Read the catalog values through the deterministic tooling or the table below instead of inventing a second list.
+
+| Kind | Purpose | Lifecycle |
+|---|---|---|
+| `project-readme` | Canonical root `README.md` | living |
+| `documentation-index` | Canonical `docs/index.md` navigation | living |
+| `area` | Source macro-area entry point | living |
+| `topic` | Living explanation of one area topic or flow | living |
+| `architecture` | Cross-area components, boundaries, and flows | living |
+| `api-reference` | Public API contracts and examples | living |
+| `data-model` | Entities, relationships, storage, and migrations | living |
+| `runbook` | Operational symptoms, procedure, rollback, and escalation | living |
+| `test-strategy` | Test levels, environments, gaps, and gates | living |
+| `backlog` | Priorities, items, and accepted risks | living |
+| `decision-record` | Immutable ADR rationale | immutable after acceptance |
+| `reference` | Stable lookup material shared by areas | living |
+| `analysis-report` | Dated analysis snapshot under `docs/_analysis/` | snapshot |
+
+Record the localized heading for every declared section in the map's `sections` object. For a topic document the required keys are `coverage`, `context`, `responsibilities`, `howItWorks`, `activeFunctionality`, `relatedDocumentation`, and `sources`; recommended keys are `technologies`, `implementation`, `problems`, and `plannedWork`. Other kinds use the keys listed in the catalog. An existing document without `sections` remains valid and is reported as legacy rather than rewritten.
+
 ## Organize from context to detail
 
 Use this full sequence for topic documents, adapting labels to the selected language:

@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT / "skill" / "codebase-analysis-ai" / "scripts"))
 
 from codebase_analysis_ai.documentation_map import (  # noqa: E402
     DocumentationMap,
+    MapError,
     active_document_paths,
     documentation_issues,
     load_map,
@@ -46,6 +47,85 @@ class DocumentationMapTest(unittest.TestCase):
             self.assertEqual([], documentation_map.validate())
             self.assertEqual([], list(documentation_issues(root, documentation_map).errors))
 
+    def test_accepts_document_kind_and_localized_sections(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_map(root, {
+                "guide": {
+                    "path": "docs/guide.md",
+                    "documentKind": "topic",
+                    "sections": {
+                        "coverage": "Cosa copre questo documento",
+                        "context": "Contesto",
+                        "responsibilities": "Responsabilità",
+                        "howItWorks": "Come funziona",
+                        "activeFunctionality": "Funzionalità attive",
+                        "relatedDocumentation": "Documentazione correlata",
+                        "sources": "Fonti",
+                    },
+                    "sourcePatterns": [],
+                    "sourceHashes": {},
+                    "relatedDocuments": [],
+                },
+            })
+
+            documentation_map = load_map(root)
+
+            self.assertEqual([], documentation_map.validate())
+            self.assertEqual("topic", documentation_map.documents["guide"]["documentKind"])
+
+    def test_rejects_unknown_document_kind(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_map(root, {
+                "guide": {
+                    "path": "docs/guide.md",
+                    "documentKind": "not-a-kind",
+                    "sourcePatterns": [],
+                    "sourceHashes": {},
+                    "relatedDocuments": [],
+                },
+            })
+
+            with self.assertRaisesRegex(MapError, "unknown document kind"):
+                load_map(root)
+
+    def test_rejects_malformed_sections(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_map(root, {
+                "guide": {
+                    "path": "docs/guide.md",
+                    "documentKind": "topic",
+                    "sections": {
+                        "coverage": "Cosa copre questo documento",
+                        "context": "Contesto",
+                    },
+                    "sourcePatterns": [],
+                    "sourceHashes": {},
+                    "relatedDocuments": [],
+                },
+            })
+
+            with self.assertRaisesRegex(MapError, "missing required sections"):
+                load_map(root)
+
+    def test_sections_require_a_document_kind(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_map(root, {
+                "guide": {
+                    "path": "docs/guide.md",
+                    "sections": {"coverage": "Cosa copre"},
+                    "sourcePatterns": [],
+                    "sourceHashes": {},
+                    "relatedDocuments": [],
+                },
+            })
+
+            with self.assertRaisesRegex(MapError, "requires documentKind"):
+                load_map(root)
+
     def test_legacy_audit_only_patterns_key_is_ignored(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -64,10 +144,12 @@ class DocumentationMapTest(unittest.TestCase):
             root = Path(directory)
             (root / "docs" / "_meta").mkdir(parents=True)
             (root / "docs" / "_archive").mkdir(parents=True)
+            (root / "docs" / "_analysis").mkdir(parents=True)
             (root / "docs" / "index.md").write_text("# Index\n", encoding="utf-8")
             (root / "docs" / "guide.md").write_text("# Guide\n", encoding="utf-8")
             (root / "docs" / "_meta" / "notes.md").write_text("# Notes\n", encoding="utf-8")
             (root / "docs" / "_archive" / "old.md").write_text("# Old\n", encoding="utf-8")
+            (root / "docs" / "_analysis" / "report.md").write_text("# Report\n", encoding="utf-8")
             (root / "docs" / "diagram.txt").write_text("diagram\n", encoding="utf-8")
 
             self.assertEqual(

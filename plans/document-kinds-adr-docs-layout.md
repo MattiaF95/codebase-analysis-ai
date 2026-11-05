@@ -4,11 +4,11 @@ ANALYSIS: COMPLETE
 RETRIAGE: NO
 
 ## Agent execution header
-- `PLAN_STATUS: OPEN`
+- `PLAN_STATUS: IN_PROGRESS`
 - `EXECUTION_READINESS: READY`
 - `EXECUTION_SCOPE: FULL_PLAN`
-- `CURRENT_REQ: none`
-- `NEXT_ACTION: execute REQ-1.1.1 (document kind catalog), then continue in plan order`
+- `CURRENT_REQ: REQ-2.1.1`
+- `NEXT_ACTION: implement Phase 2 REQ-2.1.1 through REQ-2.1.5, verify, review, and commit`
 - `COMPLETION_ALLOWED: NO`
 
 ## 1. Objective
@@ -47,10 +47,10 @@ Rendere il modello documentale capace di distinguere il tipo di documento oltre 
 
 ### 3.1 Catalogo, schema e validazione
 
-- [ ] REQ-1.1.1 Catalogo dei tipi documento: esiste una fonte runtime unica che definisce per ogni `documentKind` sezioni richieste e raccomandate, ciclo di vita, politica di indicizzazione, posizione predefinita e obbligo di `sourcePatterns`; il catalogo copre almeno README di progetto, indice documentazione, area, topic, architettura, API reference, data model, runbook, test strategy, backlog, decision record, reference e report di analisi.
-- [ ] REQ-1.1.2 Schema della mappa esteso: `documentation-map.json` accetta `documentKind`, `sections` e `metadata` opzionali; una mappa `schemaVersion: 1` senza questi campi continua a caricarsi e validarsi; un kind sconosciuto o una `sections` malformata produce un errore esplicito e localizzato.
-- [ ] REQ-1.1.3 Validazione delle sezioni: quando un documento dichiara `sections`, il validatore verifica che ogni voce sia un heading di secondo livello presente una sola volta, che le sezioni richieste dal kind siano presenti e che non esistano heading vuoti; i documenti senza `sections` restano validi come legacy.
-- [ ] REQ-1.1.4 Compatibilità del modello: bootstrap e migrate dichiarano sempre `documentKind` per i nuovi documenti; audit segnala i documenti legacy privi di kind senza bloccarli; i test coprono mappa legacy, kind sconosciuto, sezioni localizzate, sezione richiesta mancante e sezione duplicata.
+- [x] REQ-1.1.1 Catalogo dei tipi documento: esiste una fonte runtime unica che definisce per ogni `documentKind` sezioni richieste e raccomandate, ciclo di vita, politica di indicizzazione, posizione predefinita e obbligo di `sourcePatterns`; il catalogo copre almeno README di progetto, indice documentazione, area, topic, architettura, API reference, data model, runbook, test strategy, backlog, decision record, reference e report di analisi.
+- [x] REQ-1.1.2 Schema della mappa esteso: `documentation-map.json` accetta `documentKind`, `sections` e `metadata` opzionali; una mappa `schemaVersion: 1` senza questi campi continua a caricarsi e validarsi; un kind sconosciuto o una `sections` malformata produce un errore esplicito e localizzato.
+- [x] REQ-1.1.3 Validazione delle sezioni: quando un documento dichiara `sections`, il validatore verifica che ogni voce sia un heading di secondo livello presente una sola volta, che le sezioni richieste dal kind siano presenti e che non esistano heading vuoti; i documenti senza `sections` restano validi come legacy.
+- [x] REQ-1.1.4 Compatibilità del modello: bootstrap e migrate dichiarano sempre `documentKind` per i nuovi documenti; audit segnala i documenti legacy privi di kind senza bloccarli; i test coprono mappa legacy, kind sconosciuto, sezioni localizzate, sezione richiesta mancante e sezione duplicata.
 
 **Verifica fase**
 - Una mappa esistente senza `documentKind`/`sections` produce lo stesso esito di prima.

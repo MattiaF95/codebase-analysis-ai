@@ -18,6 +18,84 @@ FINDING_VERIFICATIONS = {"source-only", "test", "runtime", "external-state"}
 
 
 ABSOLUTE_PATH = re.compile(r"^(?:/|[A-Za-z]:/)")
+H2_HEADING = re.compile(r"^##[ \t]+(.+?)[ \t]*$")
+EMPTY_H2_HEADING = re.compile(r"^##[ \t]*$")
+FENCE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})")
+
+
+def _second_level_headings(text: str) -> tuple[list[str], list[tuple[int, str]]]:
+    """Return visible level-two headings and empty-heading line numbers.
+
+    Fenced code blocks are ignored so examples that contain ``##`` are not
+    mistaken for structural sections.
+    """
+    headings: list[str] = []
+    empty: list[tuple[int, str]] = []
+    fence: tuple[str, int] | None = None
+    for line_number, line in enumerate(text.splitlines(), 1):
+        marker = FENCE.match(line)
+        if marker:
+            candidate = marker.group(1)
+            if fence is None:
+                fence = (candidate[0], len(candidate))
+            elif candidate[0] == fence[0] and len(candidate) >= fence[1]:
+                fence = None
+            continue
+        if fence is not None:
+            continue
+        if EMPTY_H2_HEADING.match(line):
+            empty.append((line_number, line.strip()))
+            continue
+        match = H2_HEADING.match(line)
+        if match:
+            label = match.group(1).strip()
+            if label.endswith("#"):
+                label = label.rstrip("#").rstrip()
+            headings.append(label)
+    return headings, empty
+
+
+def validate_sections(
+    root: Path,
+    documents: dict[str, dict[str, object]],
+    paths: Iterable[str] | None = None,
+) -> list[str]:
+    """Validate declared section headings against each document file."""
+    selected = None if paths is None else {path.replace("\\", "/") for path in paths}
+    issues: list[str] = []
+    for document in documents.values():
+        if not isinstance(document, dict):
+            continue
+        sections = document.get("sections")
+        if not isinstance(sections, dict) or not sections:
+            continue
+        requested = document.get("path")
+        if not isinstance(requested, str) or not requested:
+            continue
+        relative = requested.replace("\\", "/")
+        if selected is not None and relative not in selected:
+            continue
+        file = root / relative
+        if not file.is_file():
+            continue
+        try:
+            text = file.read_text(encoding="utf-8")
+        except OSError as exc:
+            issues.append(f"{relative}: cannot read document: {exc}")
+            continue
+        headings, empty = _second_level_headings(text)
+        for line_number, line in empty:
+            issues.append(f"{relative}:{line_number}: empty second-level heading {line!r}")
+        for key, label in sections.items():
+            if not isinstance(label, str) or not label.strip():
+                continue
+            normalized_label = " ".join(label.split())
+            count = sum(1 for heading in headings if " ".join(heading.split()) == normalized_label)
+            if count == 0:
+                issues.append(f"{relative}: missing declared section {label!r} ({key})")
+            elif count > 1:
+                issues.append(f"{relative}: duplicate section heading {label!r} ({key})")
+    return issues
 
 
 def _repository_relative_path(root: Path, requested: str) -> tuple[str, Path | None, str | None]:
@@ -81,7 +159,11 @@ def _finding_issues(relative: str, text: str) -> list[str]:
     return issues
 
 
-def validate_documents(root: Path, markdown_paths: Iterable[str] | None = None) -> dict[str, object]:
+def validate_documents(
+    root: Path,
+    markdown_paths: Iterable[str] | None = None,
+    documentation_map: object | None = None,
+) -> dict[str, object]:
     root = root.resolve()
     if markdown_paths:
         paths = sorted(set(path.replace("\\", "/") for path in markdown_paths))
@@ -106,4 +188,8 @@ def validate_documents(root: Path, markdown_paths: Iterable[str] | None = None) 
         text = document.read_text(encoding="utf-8")
         issues.extend(_scope_issues(relative, text))
         issues.extend(_finding_issues(relative, text))
+    if documentation_map is not None:
+        documents = getattr(documentation_map, "documents", None)
+        if isinstance(documents, dict):
+            issues.extend(validate_sections(root, documents, inspected if markdown_paths else None))
     return {"documents": inspected, "issues": issues, "valid": not issues}

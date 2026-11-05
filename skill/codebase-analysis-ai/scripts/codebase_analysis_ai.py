@@ -16,7 +16,7 @@ from codebase_analysis_ai.documentation_map import (
     resolve_repository_path,
 )
 from codebase_analysis_ai.documentation_preflight import first_documentation_file
-from codebase_analysis_ai.document_validator import validate_documents
+from codebase_analysis_ai.document_validator import validate_documents, validate_sections
 from codebase_analysis_ai.git_changes import (
     Change,
     GitError,
@@ -70,6 +70,12 @@ def _empty_check_report(args: argparse.Namespace) -> dict[str, object]:
         "unregisteredDocuments": [],
         "indexErrors": [],
         "removedMappings": [],
+        "kindErrors": [],
+        "sectionErrors": [],
+        "adrErrors": [],
+        "coverageErrors": [],
+        "navigationErrors": [],
+        "planvaultErrors": [],
         "errors": [],
     }
 
@@ -148,6 +154,7 @@ def command_check(args: argparse.Namespace) -> int:
             *impact.changed_documents,
         })
         link_errors = validate_links(root, document_paths)
+        section_errors = validate_sections(root, documentation_map.documents, document_paths)
     except (MapError, GitError, OSError) as exc:
         return _print_check_failure(args, str(exc), returncode=2)
 
@@ -158,6 +165,7 @@ def command_check(args: argparse.Namespace) -> int:
         *[f"Stale: {item}" for item in stale],
         *[f"Removed source still mapped: {item}" for item in removed_mappings],
         *link_errors,
+        *section_errors,
     ]
 
     report = {
@@ -174,6 +182,12 @@ def command_check(args: argparse.Namespace) -> int:
         "unregisteredDocuments": list(issues.unregistered),
         "indexErrors": list(issues.index),
         "removedMappings": removed_mappings,
+        "kindErrors": [],
+        "sectionErrors": section_errors,
+        "adrErrors": [],
+        "coverageErrors": [],
+        "navigationErrors": [],
+        "planvaultErrors": [],
         "errors": errors,
     }
     if args.json:
@@ -237,7 +251,17 @@ def command_todos(args: argparse.Namespace) -> int:
 
 
 def command_validate_docs(args: argparse.Namespace) -> int:
-    report = validate_documents(_root(args.root), args.paths)
+    root = _root(args.root)
+    documentation_map = None
+    map_issue = None
+    try:
+        documentation_map = load_map(root)
+    except MapError as exc:
+        map_issue = str(exc)
+    report = validate_documents(root, args.paths, documentation_map)
+    if map_issue:
+        report["issues"].insert(0, map_issue)
+        report["valid"] = False
     print(json.dumps(report, indent=2))
     return 1 if args.strict and not report["valid"] else 0
 

@@ -10,6 +10,40 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "skill" / "codebase-analysis-ai" / "scripts"))
 
 from codebase_analysis_ai.document_validator import validate_documents  # noqa: E402
+from codebase_analysis_ai.documentation_map import DocumentationMap  # noqa: E402
+
+
+SECTIONS = {
+    "coverage": "Cosa copre questo documento",
+    "context": "Contesto",
+    "responsibilities": "Responsabilità",
+    "howItWorks": "Come funziona",
+    "activeFunctionality": "Funzionalità attive",
+    "relatedDocumentation": "Documentazione correlata",
+    "sources": "Fonti",
+}
+
+
+def topic_document(*, omit: str | None = None, duplicate: str | None = None, empty: bool = False) -> str:
+    lines = [
+        "# Guida",
+        "",
+        "## Cosa copre questo documento",
+        "<!-- codebase-analysis-ai:scope:start -->",
+        "Descrive come funziona la guida.",
+        "<!-- codebase-analysis-ai:scope:end -->",
+    ]
+    for key, label in SECTIONS.items():
+        if key == "coverage":
+            continue
+        if key == omit:
+            continue
+        lines.extend(["", f"## {label}", "Contenuto."])
+        if key == duplicate:
+            lines.extend(["", f"## {label}", "Duplicato."])
+    if empty:
+        lines.extend(["", "## ", "Senza titolo."])
+    return "\n".join(lines) + "\n"
 
 
 class DocumentValidatorTest(unittest.TestCase):
@@ -27,6 +61,87 @@ class DocumentValidatorTest(unittest.TestCase):
             )
 
             self.assertTrue(validate_documents(root)["valid"])
+
+    def test_accepts_localized_sections_declared_in_the_map(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "docs").mkdir()
+            (root / "docs" / "guide.md").write_text(topic_document(), encoding="utf-8")
+            documentation_map = DocumentationMap(Path("map.json"), {
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "guide": {
+                        "path": "docs/guide.md",
+                        "documentKind": "topic",
+                        "sections": SECTIONS,
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    },
+                },
+            })
+
+            report = validate_documents(root, documentation_map=documentation_map)
+
+            self.assertTrue(report["valid"], report["issues"])
+
+    def test_reports_missing_duplicate_and_empty_section_headings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "docs").mkdir()
+            (root / "docs" / "missing.md").write_text(topic_document(omit="context"), encoding="utf-8")
+            (root / "docs" / "duplicate.md").write_text(topic_document(duplicate="context"), encoding="utf-8")
+            (root / "docs" / "empty.md").write_text(topic_document(empty=True), encoding="utf-8")
+            documentation_map = DocumentationMap(Path("map.json"), {
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    name: {
+                        "path": f"docs/{name}.md",
+                        "documentKind": "topic",
+                        "sections": SECTIONS,
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    }
+                    for name in ("missing", "duplicate", "empty")
+                },
+            })
+
+            issues = validate_documents(root, documentation_map=documentation_map)["issues"]
+
+            self.assertTrue(any("missing declared section 'Contesto' (context)" in issue for issue in issues))
+            self.assertTrue(any("duplicate section heading 'Contesto' (context)" in issue for issue in issues))
+            self.assertTrue(any("empty second-level heading" in issue for issue in issues))
+
+    def test_documents_without_sections_remain_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "docs").mkdir()
+            (root / "docs" / "legacy.md").write_text(
+                "# Legacy\n\n"
+                "<!-- codebase-analysis-ai:scope:start -->\n"
+                "Documento legacy senza contratto di sezioni.\n"
+                "<!-- codebase-analysis-ai:scope:end -->\n",
+                encoding="utf-8",
+            )
+            documentation_map = DocumentationMap(Path("map.json"), {
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "legacy": {
+                        "path": "docs/legacy.md",
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    },
+                },
+            })
+
+            report = validate_documents(root, documentation_map=documentation_map)
+
+            self.assertTrue(report["valid"], report["issues"])
 
     def test_reports_missing_markers_long_scope_and_invalid_finding(self):
         with tempfile.TemporaryDirectory() as directory:

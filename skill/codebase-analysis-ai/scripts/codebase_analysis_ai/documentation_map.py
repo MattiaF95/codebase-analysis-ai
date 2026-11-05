@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from .document_kinds import document_kind, section_contract_errors
 from .glob_patterns import glob_match
 from .path_filters import is_excluded_path
 
@@ -174,6 +175,22 @@ def _structure_errors(data: dict[str, Any]) -> list[str]:
             value = document.get(key, [])
             if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
                 errors.append(f"{doc_id}: {key} must be a string array")
+        kind = document.get("documentKind")
+        sections = document.get("sections")
+        if kind is not None:
+            if not isinstance(kind, str) or not kind:
+                errors.append(f"{doc_id}.documentKind must be a non-empty string")
+            elif document_kind(kind) is None:
+                errors.append(f"{doc_id}.documentKind: unknown document kind {kind!r}")
+        if sections is not None:
+            if kind is None:
+                errors.append(f"{doc_id}.sections requires documentKind")
+            else:
+                for issue in section_contract_errors(kind, sections):
+                    errors.append(f"{doc_id}.sections: {issue}")
+        metadata = document.get("metadata")
+        if metadata is not None and not isinstance(metadata, dict):
+            errors.append(f"{doc_id}.metadata must be an object")
     return errors
 
 
@@ -357,7 +374,7 @@ class DocumentationMap:
         return (
             normalized.startswith("docs/")
             and normalized.endswith(".md")
-            and not normalized.startswith("docs/_archive/")
+            and not normalized.startswith(DOCUMENTATION_EXEMPT_PREFIXES)
         )
 
     def matching_documents(self, source_path: str) -> set[str]:
@@ -387,7 +404,10 @@ class DocumentationMap:
 
 
 DOCUMENTATION_INDEX = "docs/index.md"
-DOCUMENTATION_EXEMPT_PREFIXES = ("docs/_meta/", "docs/_archive/")
+DECISION_DIRECTORY = "docs/decisions/"
+LEGACY_DECISION_DIRECTORY = "docs/adr/"
+ANALYSIS_DIRECTORY = "docs/_analysis/"
+DOCUMENTATION_EXEMPT_PREFIXES = ("docs/_meta/", "docs/_archive/", ANALYSIS_DIRECTORY)
 
 
 @dataclass(frozen=True)
