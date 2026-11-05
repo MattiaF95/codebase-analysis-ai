@@ -12,7 +12,11 @@
 
 ## Documentation areas
 
-{{ documentationMap }}
+{{ documentationAreas }}
+
+## Cross-cutting documentation
+
+{{ documentationKinds }}
 
 ## Main flows
 

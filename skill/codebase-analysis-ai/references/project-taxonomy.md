@@ -10,17 +10,20 @@ Derive repository shape and source ownership from the structural inventory and s
 - Infrastructure repository: prioritize environments, modules, deployment, security, state, and operations.
 - Static site: prioritize HTML, styling, scripts, assets, SEO, accessibility, build, deployment, and content delivery.
 
-Use this table as a starting point for document kinds, not as a mandatory folder template:
+Use this table as a starting point for document kinds and directories, not as a mandatory folder template:
 
-| Repository type | Document kinds to consider |
-|---|---|
-| Library or SDK | `api-reference`, `reference`, `architecture`, `runbook`, `decision-record` |
-| Service or API | `area`, `architecture`, `data-model`, `api-reference`, `runbook`, `decision-record` |
-| Monorepo | `area`, `architecture`, `reference`, `runbook`, `decision-record` |
-| CLI | `reference`, `runbook`, `architecture`, `decision-record` |
-| Static site | `architecture`, `reference`, `runbook`, `decision-record` |
+| Repository profile | Areas and kind directories to consider | Document kinds to consider |
+|---|---|---|
+| Library or SDK | `docs/<library>/`, `docs/reference/`, `docs/decisions/` | `api-reference`, `reference`, `architecture`, `runbook`, `decision-record` |
+| Service or API | `docs/<service>/`, `docs/architecture/`, `docs/runbooks/`, `docs/decisions/` | `area`, `architecture`, `data-model`, `api-reference`, `runbook`, `decision-record` |
+| Monorepo | one area directory per independent workspace, plus shared `docs/architecture/`, `docs/reference/`, `docs/decisions/` | `area`, `architecture`, `reference`, `runbook`, `decision-record` |
+| CLI | `docs/reference/`, `docs/runbooks/`, `docs/architecture/`, `docs/decisions/` | `reference`, `runbook`, `architecture`, `decision-record` |
+| Full-stack application | separate frontend and backend areas, plus shared `docs/architecture/`, `docs/runbooks/`, `docs/decisions/` | `area`, `topic`, `architecture`, `data-model`, `api-reference`, `runbook`, `decision-record` |
+| Static site | `docs/<site>/`, `docs/architecture/`, `docs/reference/`, `docs/runbooks/`, `docs/decisions/` | `architecture`, `reference`, `runbook`, `decision-record` |
 
-These repository types are examples, not a closed catalog. Prefer terminology and boundaries declared by workspace files, manifests, build configuration, deployment configuration, and canonical documentation. When the evidence does not support a specific label, use a neutral `core` or module name and record what remains unresolved instead of forcing a known technology category.
+Create a kind directory only when it contains at least one active document. Do not instantiate every suggested directory for a small repository: a single-area project may need only `docs/index.md`, `docs/_meta/`, and one area index. Put cross-area flows in `docs/architecture/` and keep them out of duplicated area documents.
+
+These repository profiles are examples, not a closed catalog. Prefer terminology and boundaries declared by workspace files, manifests, build configuration, deployment configuration, and canonical documentation. When the evidence does not support a specific label, use a neutral `core` or module name and record what remains unresolved instead of forcing a known technology category.
 
 Represent every proposed source area with `area`, `candidatePaths`, `evidence`, and `reason`. Represent every proposed documentation topic with `topic`, `candidatePaths`, `sourceAreas`, and `reason`. The parent assigns a `documentKind` and section set to each output document after the topic is selected; analyzers report kind needs but never select them. Create evidence-backed topics, not necessarily one subagent or one folder for every topic. A small repository may be analyzed entirely by the parent or one broad analyzer. Larger independent source areas may receive separate analyzers. The same source path may belong to multiple evidence areas when the questions differ.
 

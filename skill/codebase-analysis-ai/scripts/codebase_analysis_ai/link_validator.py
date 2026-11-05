@@ -173,6 +173,29 @@ def _destination(raw_target: str) -> str:
     return unquote(target.split("#", 1)[0])
 
 
+def repository_links(root: Path, relative: str) -> set[str]:
+    """Return existing repository-relative files linked from one document."""
+    root = root.resolve()
+    document = resolve_repository_path(root, relative)
+    if not document.is_file():
+        return set()
+    text = document.read_text(encoding="utf-8")
+    links: set[str] = set()
+    for raw_target in _targets(text):
+        stripped = raw_target.strip().strip("<>")
+        if not stripped or stripped.startswith(("#", "//")) or urlsplit(stripped).scheme:
+            continue
+        target = _destination(raw_target)
+        if not target:
+            continue
+        resolved = (document.parent / target).resolve()
+        try:
+            links.add(resolved.relative_to(root).as_posix())
+        except ValueError:
+            continue
+    return links
+
+
 def validate_links(root: Path, markdown_paths: Iterable[str]) -> list[str]:
     errors: list[str] = []
     root = root.resolve()

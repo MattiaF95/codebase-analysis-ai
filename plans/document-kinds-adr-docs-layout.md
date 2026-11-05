@@ -7,8 +7,8 @@ RETRIAGE: NO
 - `PLAN_STATUS: IN_PROGRESS`
 - `EXECUTION_READINESS: READY`
 - `EXECUTION_SCOPE: FULL_PLAN`
-- `CURRENT_REQ: REQ-2.1.1`
-- `NEXT_ACTION: implement Phase 2 REQ-2.1.1 through REQ-2.1.5, verify, review, and commit`
+- `CURRENT_REQ: REQ-3.1.1`
+- `NEXT_ACTION: implement Phase 3 REQ-3.1.1 through REQ-3.1.5, verify, review, and commit`
 - `COMPLETION_ALLOWED: NO`
 
 ## 1. Objective
@@ -61,11 +61,11 @@ Rendere il modello documentale capace di distinguere il tipo di documento oltre 
 
 ### 4.1 Layout, navigazione e collocazione
 
-- [ ] REQ-2.1.1 Layout canonico: la documentazione attiva usa `docs/index.md`, `docs/_meta/`, directory per area e directory per kind; `_archive/` e `_analysis/` sono opzionali; non vengono create directory vuote e lo stesso contenuto non è duplicato tra area e kind.
-- [ ] REQ-2.1.2 Navigazione e coverage: `docs/index.md` linka ogni area index e ogni kind index attivo, oltre a `_meta/coverage.md`; la coverage riporta conteggi per kind e per stato ADR; `_analysis/` non è indicizzato e `_archive/` resta escluso dalla documentazione attiva.
-- [ ] REQ-2.1.3 Collocazione e naming: le regole distinguono documenti area-first e kind-first, usano `kebab-case`, mantengono ID stabili e numerazione ADR a quattro cifre; path e ID esistenti non vengono rinominati automaticamente; `docs/adr/` è riconosciuto come alias legacy di `docs/decisions/`.
-- [ ] REQ-2.1.4 Profili per tipologia di repository: la guida di tassonomia mappa library, service, monorepo, CLI e applicazione full-stack ai kind e alle directory consigliate, senza imporre la stessa struttura a ogni repository.
-- [ ] REQ-2.1.5 Template e reference allineati: i template di indice, area e topic supportano le sezioni per kind; esiste un template per i report di analisi; le reference di bootstrap, migrate, update, audit e document-style descrivono layout, kind, collocazione e cicli di vita.
+- [x] REQ-2.1.1 Layout canonico: la documentazione attiva usa `docs/index.md`, `docs/_meta/`, directory per area e directory per kind; `_archive/` e `_analysis/` sono opzionali; non vengono create directory vuote e lo stesso contenuto non è duplicato tra area e kind.
+- [x] REQ-2.1.2 Navigazione e coverage: `docs/index.md` linka ogni area index e ogni kind index attivo, oltre a `_meta/coverage.md`; la coverage riporta conteggi per kind e per stato ADR; `_analysis/` non è indicizzato e `_archive/` resta escluso dalla documentazione attiva.
+- [x] REQ-2.1.3 Collocazione e naming: le regole distinguono documenti area-first e kind-first, usano `kebab-case`, mantengono ID stabili e numerazione ADR a quattro cifre; path e ID esistenti non vengono rinominati automaticamente; `docs/adr/` è riconosciuto come alias legacy di `docs/decisions/`.
+- [x] REQ-2.1.4 Profili per tipologia di repository: la guida di tassonomia mappa library, service, monorepo, CLI e applicazione full-stack ai kind e alle directory consigliate, senza imporre la stessa struttura a ogni repository.
+- [x] REQ-2.1.5 Template e reference allineati: i template di indice, area e topic supportano le sezioni per kind; esiste un template per i report di analisi; le reference di bootstrap, migrate, update, audit e document-style descrivono layout, kind, collocazione e cicli di vita.
 
 **Verifica fase**
 - Un repository piccolo con una sola area produce solo `docs/index.md`, `_meta/` e l'area index, senza directory vuote.

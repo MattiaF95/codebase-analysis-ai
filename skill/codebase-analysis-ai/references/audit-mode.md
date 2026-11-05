@@ -13,7 +13,7 @@ For an explicitly full audit, also read `subagent-contract.md`. Reuse existing h
 ## Procedure
 
 1. Read `docs/index.md` first, use it to resolve an explicit document scope or the current Git impact set, and report a missing or stale index as a finding. Do not audit `docs/_archive/` unless the user explicitly requests the historical archive.
-2. Validate names, document kinds, required sections, links, source references, hashes, ADR status, and mapping consistency. Report documents that lack `documentKind` or `sections` as legacy findings; do not fail them solely for missing optional fields.
+2. Validate names, document kinds, required sections, links, source references, hashes, ADR status, and mapping consistency. Check that `docs/index.md` links every area index, active kind index, and `_meta/coverage.md`, that coverage counts match the map, and that `docs/_analysis/` and `docs/_archive/` stay out of active navigation. Report documents that lack `documentKind` or `sections` as legacy findings; do not fail them solely for missing optional fields.
 3. Resolve the documentation language before reviewing prose: use the recorded decision or canonical documents; ask the user and wait when neither provides reliable evidence, then verify consistency.
 4. Review changed or selected documents for understandable context, direct sentences, explicit component names, and explained acronyms using `document-style.md`.
 5. Compare documented active behavior with repository evidence.

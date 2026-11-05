@@ -101,6 +101,21 @@ Every new document declares a `documentKind` in `docs/_meta/documentation-map.js
 
 Record the localized heading for every declared section in the map's `sections` object. For a topic document the required keys are `coverage`, `context`, `responsibilities`, `howItWorks`, `activeFunctionality`, `relatedDocumentation`, and `sources`; recommended keys are `technologies`, `implementation`, `problems`, and `plannedWork`. Other kinds use the keys listed in the catalog. An existing document without `sections` remains valid and is reported as legacy rather than rewritten.
 
+## Canonical documentation layout
+
+`docs/index.md` is the canonical entry point. It links every active area index, every active kind index, and `docs/_meta/coverage.md`. A first-level directory under `docs/` must contain content before it is created; do not add empty folders for symmetry.
+
+- `docs/_meta/` holds `documentation-map.json`, `coverage.md`, and optional informational state. It is metadata, not active documentation.
+- Area-first documentation lives under `docs/<area>/`: `README.md` is the area index and topic documents sit beside it. `docs/<area>/index.md` may also serve as the area index when the repository already uses that name.
+- Kind-first documentation lives under `docs/decisions/`, `docs/reference/`, `docs/runbooks/`, and `docs/architecture/`. Each active kind directory exposes an `index.md` linked from `docs/index.md`.
+- `docs/_analysis/` contains dated analysis reports. Reports are linkable as evidence but are not listed in the active index, are not required in the active documentation map, and do not affect active coverage counts.
+- `docs/_archive/` preserves historical material and is excluded from active documentation, navigation, and coverage.
+- The same content is not duplicated between an area document and a kind document. Cross-area material belongs under a kind directory and is linked from the relevant areas.
+
+Coverage is derived from the map and reports document counts by kind and decision-record counts by status. Generate or refresh it with the deterministic `coverage` command, then keep the Markdown summary consistent with the map. The command reports counts; it never edits documents.
+
+`docs/adr/` is recognized as a legacy alias of `docs/decisions/`. Existing ADRs keep their path, filename, and number; migration records them where they are and never renames or renumbers them automatically.
+
 ## Organize from context to detail
 
 Use this full sequence for topic documents, adapting labels to the selected language:

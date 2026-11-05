@@ -452,6 +452,82 @@ class CheckerIntegrationTest(unittest.TestCase):
             self.assertTrue(json.loads(warned.stdout)["errors"])
             self.assertTrue(json.loads(strict.stdout)["errors"])
 
+    def test_check_reports_navigation_and_missing_coverage_for_declared_index(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            run("git", "init", "-b", "main", cwd=project)
+            (project / "docs" / "backend").mkdir(parents=True)
+            (project / "docs" / "_meta").mkdir()
+            (project / "docs" / "index.md").write_text("# Documentation\n", encoding="utf-8")
+            (project / "docs" / "backend" / "index.md").write_text("# Backend\n", encoding="utf-8")
+            (project / "docs" / "_meta" / "documentation-map.json").write_text(json.dumps({
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "index": {
+                        "path": "docs/index.md",
+                        "documentKind": "documentation-index",
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    },
+                    "backend": {
+                        "path": "docs/backend/index.md",
+                        "documentKind": "area",
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    },
+                },
+            }), encoding="utf-8")
+
+            result = run(
+                sys.executable, str(CLI), "--root", str(project), "check", "--mode", "working-tree", "--json",
+                cwd=project,
+            )
+
+            self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertTrue(any("docs/backend/index.md" in error for error in report["navigationErrors"]))
+            self.assertTrue(any("Missing documentation coverage" in error for error in report["coverageErrors"]))
+
+    def test_check_keeps_legacy_index_navigation_non_blocking(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            run("git", "init", "-b", "main", cwd=project)
+            (project / "docs" / "backend").mkdir(parents=True)
+            (project / "docs" / "_meta").mkdir()
+            (project / "docs" / "index.md").write_text("# Documentation\n", encoding="utf-8")
+            (project / "docs" / "backend" / "index.md").write_text("# Backend\n", encoding="utf-8")
+            (project / "docs" / "_meta" / "documentation-map.json").write_text(json.dumps({
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "index": {
+                        "path": "docs/index.md",
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    },
+                    "backend": {
+                        "path": "docs/backend/index.md",
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    },
+                },
+            }), encoding="utf-8")
+
+            result = run(
+                sys.executable, str(CLI), "--root", str(project), "check", "--mode", "working-tree", "--json",
+                cwd=project,
+            )
+
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual([], report["navigationErrors"])
+            self.assertEqual([], report["coverageErrors"])
+
 
 if __name__ == "__main__":
     unittest.main()

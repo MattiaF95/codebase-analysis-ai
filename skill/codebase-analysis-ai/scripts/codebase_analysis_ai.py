@@ -15,6 +15,11 @@ from codebase_analysis_ai.documentation_map import (
     normalize_repository_path,
     resolve_repository_path,
 )
+from codebase_analysis_ai.documentation_coverage import (
+    coverage_counts,
+    coverage_markdown,
+    navigation_issues,
+)
 from codebase_analysis_ai.documentation_preflight import first_documentation_file
 from codebase_analysis_ai.document_validator import validate_documents, validate_sections
 from codebase_analysis_ai.git_changes import (
@@ -155,6 +160,7 @@ def command_check(args: argparse.Namespace) -> int:
         })
         link_errors = validate_links(root, document_paths)
         section_errors = validate_sections(root, documentation_map.documents, document_paths)
+        navigation = navigation_issues(root, documentation_map)
     except (MapError, GitError, OSError) as exc:
         return _print_check_failure(args, str(exc), returncode=2)
 
@@ -166,6 +172,8 @@ def command_check(args: argparse.Namespace) -> int:
         *[f"Removed source still mapped: {item}" for item in removed_mappings],
         *link_errors,
         *section_errors,
+        *navigation["navigationErrors"],
+        *navigation["coverageErrors"],
     ]
 
     report = {
@@ -185,8 +193,8 @@ def command_check(args: argparse.Namespace) -> int:
         "kindErrors": [],
         "sectionErrors": section_errors,
         "adrErrors": [],
-        "coverageErrors": [],
-        "navigationErrors": [],
+        "coverageErrors": navigation["coverageErrors"],
+        "navigationErrors": navigation["navigationErrors"],
         "planvaultErrors": [],
         "errors": errors,
     }
@@ -259,11 +267,28 @@ def command_validate_docs(args: argparse.Namespace) -> int:
     except MapError as exc:
         map_issue = str(exc)
     report = validate_documents(root, args.paths, documentation_map)
+    if documentation_map is not None:
+        navigation = navigation_issues(root, documentation_map)
+        report["navigationErrors"] = navigation["navigationErrors"]
+        report["coverageErrors"] = navigation["coverageErrors"]
+        report["issues"].extend(navigation["navigationErrors"])
+        report["issues"].extend(navigation["coverageErrors"])
+        report["valid"] = not report["issues"]
     if map_issue:
         report["issues"].insert(0, map_issue)
         report["valid"] = False
     print(json.dumps(report, indent=2))
     return 1 if args.strict and not report["valid"] else 0
+
+
+def command_coverage(args: argparse.Namespace) -> int:
+    documentation_map = load_map(_root(args.root))
+    counts = coverage_counts(documentation_map)
+    if args.markdown:
+        print(coverage_markdown(counts), end="")
+    else:
+        print(json.dumps(counts, indent=2))
+    return 0
 
 
 def command_install(args: argparse.Namespace) -> int:
@@ -323,6 +348,12 @@ def build_parser() -> argparse.ArgumentParser:
     validate_docs.add_argument("paths", nargs="*")
     validate_docs.add_argument("--strict", action="store_true", help="Return a failure status when issues are found")
     validate_docs.set_defaults(handler=command_validate_docs)
+
+    coverage = subparsers.add_parser(
+        "coverage", help="Report document counts by kind and decision-record status"
+    )
+    coverage.add_argument("--markdown", action="store_true", help="Print a Markdown coverage document")
+    coverage.set_defaults(handler=command_coverage)
 
     install = subparsers.add_parser("install", help="Install project automation components")
     install.add_argument("--agents", nargs="+", default=["codex"], choices=["codex", "claude", "gemini", "copilot", "all"])

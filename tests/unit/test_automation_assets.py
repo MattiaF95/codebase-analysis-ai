@@ -99,6 +99,14 @@ class AutomationAssetsTest(unittest.TestCase):
         content = (SKILL / "assets" / "templates" / "docs-index.md").read_text(encoding="utf-8")
         self.assertIn("](_meta/coverage.md)", content)
         self.assertNotIn("](coverage.md)", content)
+        self.assertIn("Cross-cutting documentation", content)
+
+    def test_templates_cover_analysis_reports_coverage_and_kind_indexes(self):
+        templates = SKILL / "assets" / "templates"
+        for name in ("coverage.md", "analysis-report.md", "kind-index.md"):
+            with self.subTest(name=name):
+                content = (templates / name).read_text(encoding="utf-8")
+                self.assertIn("codebase-analysis-ai:scope:start", content)
 
 if __name__ == "__main__":
     unittest.main()
