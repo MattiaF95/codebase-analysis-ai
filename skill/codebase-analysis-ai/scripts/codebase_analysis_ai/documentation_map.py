@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import fnmatch
 import json
 import re
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
+from .glob_patterns import glob_match
 from .path_filters import is_excluded_path
 
 
@@ -49,15 +49,63 @@ DEFAULT_IGNORE = [
 ]
 
 RELEVANT_SUFFIXES = {
+    # Application languages already covered.
     ".java", ".kt", ".kts", ".js", ".jsx", ".ts", ".tsx", ".py", ".go", ".rs",
     ".cs", ".php", ".rb", ".swift", ".scala", ".sql", ".graphql", ".proto", ".xml",
     ".yml", ".yaml", ".json", ".toml", ".properties", ".gradle", ".sh", ".ps1",
+    # Infrastructure as code and deployment descriptors.
+    ".tf", ".tfvars", ".hcl", ".bicep", ".nix",
+    # Mobile and embedded sources.
+    ".dart", ".m", ".mm", ".ino",
+    # Frontend components and static assets.
+    ".vue", ".svelte", ".astro", ".html", ".htm", ".css", ".scss", ".less",
+    ".sass", ".styl",
+    # Build and runtime configuration files.
+    ".ini", ".cfg", ".conf",
 }
 
+# Compared case-insensitively against the file name.
 RELEVANT_NAMES = {
-    "Dockerfile", "Makefile", "pom.xml", "package.json", "angular.json", "settings.gradle",
+    "dockerfile", "containerfile", "caddyfile", "procfile", "nginx.conf",
+    "kustomization.yaml", "kustomization.yml", "chart.yaml", "values.yaml",
+    "makefile", "pom.xml", "package.json", "angular.json", "settings.gradle",
     "build.gradle", "docker-compose.yml", "docker-compose.yaml",
 }
+
+# Lockfiles are dependency metadata and are never reported as unmapped sources.
+LOCKFILE_NAMES = {
+    "package-lock.json",
+    "npm-shrinkwrap.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "bun.lockb",
+    "cargo.lock",
+    "poetry.lock",
+    "pipfile.lock",
+    "composer.lock",
+    "gemfile.lock",
+    "go.sum",
+    "flake.lock",
+}
+
+# Generated artifacts keep a source-like suffix but are not hand-written code.
+GENERATED_OUTPUT_PATTERNS = (
+    "*.min.js",
+    "*.min.css",
+    "*.map",
+    "*.g.dart",
+    "*.freezed.dart",
+    "*.pb.go",
+    "*_pb2.py",
+)
+
+
+def _is_generated_or_lockfile(name: str) -> bool:
+    lowered = name.casefold()
+    if lowered in LOCKFILE_NAMES:
+        return True
+    return any(glob_match(lowered, pattern) for pattern in GENERATED_OUTPUT_PATTERNS)
+
 
 LANGUAGE_TAG = re.compile(r"^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-(?:[A-Z]{2}|[0-9]{3}))?$")
 LANGUAGE_DECISION_SOURCES = {"user", "repository-policy", "existing-canonical-docs"}
@@ -288,13 +336,15 @@ class DocumentationMap:
         normalized = normalize_repository_path(path)
         if is_excluded_path(PurePosixPath(normalized).parts):
             return True
-        return any(fnmatch.fnmatch(normalized, pattern) for pattern in self.ignore_patterns())
+        return any(glob_match(normalized, pattern) for pattern in self.ignore_patterns())
 
     def is_relevant_source(self, path: str) -> bool:
         if self.is_ignored(path):
             return False
         pure = PurePosixPath(normalize_repository_path(path))
-        return pure.name in RELEVANT_NAMES or pure.suffix.lower() in RELEVANT_SUFFIXES
+        if _is_generated_or_lockfile(pure.name):
+            return False
+        return pure.name.casefold() in RELEVANT_NAMES or pure.suffix.lower() in RELEVANT_SUFFIXES
 
     def is_document_path(self, path: str) -> bool:
         normalized = normalize_repository_path(path)
@@ -317,7 +367,7 @@ class DocumentationMap:
         for doc_id, document in self.documents.items():
             explicit = {normalize_repository_path(item) for item in document.get("sourceHashes", {})}
             patterns = [normalize_repository_path(item) for item in document.get("sourcePatterns", [])]
-            if normalized in explicit or any(fnmatch.fnmatch(normalized, pattern) for pattern in patterns):
+            if normalized in explicit or any(glob_match(normalized, pattern) for pattern in patterns):
                 matched.add(doc_id)
         return matched
 

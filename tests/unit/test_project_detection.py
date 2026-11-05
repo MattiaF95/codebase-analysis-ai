@@ -1,13 +1,16 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "skill" / "codebase-analysis-ai" / "scripts"))
 
+from codebase_analysis_ai import path_filters  # noqa: E402
 from codebase_analysis_ai.project_detection import (  # noqa: E402
     MAX_STRUCTURAL_FILES,
     inventory_project,
@@ -147,6 +150,64 @@ class ProjectInventoryTest(unittest.TestCase):
 
             self.assertEqual(2, inventory["schemaVersion"])
             self.assertEqual(["Cargo.toml"], inventory["structuralFiles"])
+
+    def test_walker_prunes_populated_excluded_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            node_modules = root / "node_modules"
+            node_modules.mkdir()
+            for index in range(200):
+                (node_modules / f"package-{index:03d}.json").write_text("{}\n", encoding="utf-8")
+            (root / "src").mkdir()
+            (root / "src" / "main.py").write_text("print('ok')\n", encoding="utf-8")
+            (root / "package.json").write_text("{}\n", encoding="utf-8")
+
+            visited = []
+            original_walk = os.walk
+
+            def recording_walk(path, **kwargs):
+                for dirpath, dirnames, filenames in original_walk(path, **kwargs):
+                    visited.append(Path(dirpath))
+                    yield dirpath, dirnames, filenames
+
+            with mock.patch.object(path_filters.os, "walk", side_effect=recording_walk):
+                result = inventory_project(root)
+
+            self.assertFalse(any("node_modules" in path.parts for path in visited))
+            self.assertEqual(2, result["fileCount"])
+            self.assertEqual(["package.json"], result["structuralFiles"])
+
+    def test_excludes_additional_generated_directories(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for folder in ("coverage", "out", "bin", "obj", ".next", ".angular"):
+                path = root / folder
+                path.mkdir()
+                (path / "package.json").write_text("{}\n", encoding="utf-8")
+            (root / "package.json").write_text("{}\n", encoding="utf-8")
+
+            result = inventory_project(root)
+
+            self.assertEqual(1, result["fileCount"])
+            self.assertEqual(["package.json"], result["structuralFiles"])
+
+    def test_does_not_follow_directory_symlinks(self):
+        if not hasattr(os, "symlink"):
+            self.skipTest("symlinks are not supported")
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+            root = Path(directory)
+            outside_path = Path(outside)
+            (outside_path / "package.json").write_text("{}\n", encoding="utf-8")
+            try:
+                (root / "linked").symlink_to(outside_path, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks are not available")
+            (root / "package.json").write_text("{}\n", encoding="utf-8")
+
+            result = inventory_project(root)
+
+            self.assertEqual(1, result["fileCount"])
+            self.assertEqual(["package.json"], result["structuralFiles"])
 
 
 if __name__ == "__main__":

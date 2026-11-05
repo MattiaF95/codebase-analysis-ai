@@ -81,6 +81,32 @@ class ImpactGraphTest(unittest.TestCase):
 
         self.assertEqual((), impact.unmapped)
 
+    def test_reports_new_infrastructure_and_mobile_sources_as_unmapped(self):
+        mapping = DocumentationMap(Path("map.json"), {"schemaVersion": 1, "settings": {}, "documents": {}})
+        impact = resolve_impact(mapping, ["infra/main.tf", "mobile/lib/main.dart"])
+
+        self.assertEqual(("infra/main.tf", "mobile/lib/main.dart"), impact.unmapped)
+
+    def test_lockfiles_and_generated_outputs_are_not_unmapped(self):
+        mapping = DocumentationMap(Path("map.json"), {"schemaVersion": 1, "settings": {}, "documents": {}})
+        impact = resolve_impact(mapping, [
+            "package-lock.json",
+            "yarn.lock",
+            "go.sum",
+            "static/main.min.js",
+            "static/main.js.map",
+            "lib/model.g.dart",
+            "proto/service.pb.go",
+        ])
+
+        self.assertEqual((), impact.unmapped)
+
+    def test_case_insensitive_relevant_names_are_unmapped(self):
+        mapping = DocumentationMap(Path("map.json"), {"schemaVersion": 1, "settings": {}, "documents": {}})
+        impact = resolve_impact(mapping, ["dockerfile"])
+
+        self.assertEqual(("dockerfile",), impact.unmapped)
+
     def test_accepts_language_metadata(self):
         mapping = DocumentationMap(
             Path("map.json"),

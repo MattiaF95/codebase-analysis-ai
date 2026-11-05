@@ -7,8 +7,8 @@ RETRIAGE: NO
 - `PLAN_STATUS: IN_PROGRESS`
 - `EXECUTION_READINESS: READY`
 - `EXECUTION_SCOPE: FULL_PLAN`
-- `CURRENT_REQ: REQ-3.1.1`
-- `NEXT_ACTION: implement Phase 3 REQ-3.1.1 through REQ-3.1.4, verify, review, and commit`
+- `CURRENT_REQ: REQ-4.1.1`
+- `NEXT_ACTION: implement Phase 4 REQ-4.1.1, REQ-4.2.1 through REQ-4.2.3 and REQ-4.3.1, verify, review, and commit`
 - `COMPLETION_ALLOWED: NO`
 
 ## 1. Objective
@@ -78,10 +78,10 @@ Correggere le lacune del gate deterministico (`check`), le ambiguità dell'insta
 
 ### 5.1 Pattern, rilevanza e perimetro
 
-- [ ] REQ-3.1.1 Semantica glob: `ignorePatterns` e `sourcePatterns` usano lo stesso motore; `src/*.py` non corrisponde a `src/a/b.py`, `src/**` sì, `**/` corrisponde anche a zero directory; i default continuano a funzionare.
-- [ ] REQ-3.1.2 Rilevanza delle sorgenti: nuovi file infrastructure, mobile, frontend e statici supportati vengono segnalati se non mappati; lockfile e output generati non vengono segnalati; i nomi tipo `Dockerfile` sono riconosciuti senza distinzione di case.
-- [ ] REQ-3.1.3 Traversal limitato: `detect` e `docs-state` non discendono in `node_modules`, `.git`, `target`, `dist`, `build`, `vendor`, `coverage`, `out`, `bin`, `obj`, `.next`, `.angular` e directory equivalenti; il costo resta proporzionale ai file ispezionati, non all'intero albero.
-- [ ] REQ-3.1.4 Preflight path-aware: `.html` e `.txt` contano come documentazione solo in directory documentali, alla root o con nomi canonici; un `src/index.html` non rende `docs-state` “present”.
+- [x] REQ-3.1.1 Semantica glob: `ignorePatterns` e `sourcePatterns` usano lo stesso motore; `src/*.py` non corrisponde a `src/a/b.py`, `src/**` sì, `**/` corrisponde anche a zero directory; i default continuano a funzionare.
+- [x] REQ-3.1.2 Rilevanza delle sorgenti: nuovi file infrastructure, mobile, frontend e statici supportati vengono segnalati se non mappati; lockfile e output generati non vengono segnalati; i nomi tipo `Dockerfile` sono riconosciuti senza distinzione di case.
+- [x] REQ-3.1.3 Traversal limitato: `detect` e `docs-state` non discendono in `node_modules`, `.git`, `target`, `dist`, `build`, `vendor`, `coverage`, `out`, `bin`, `obj`, `.next`, `.angular` e directory equivalenti; il costo resta proporzionale ai file ispezionati, non all'intero albero.
+- [x] REQ-3.1.4 Preflight path-aware: `.html` e `.txt` contano come documentazione solo in directory documentali, alla root o con nomi canonici; un `src/index.html` non rende `docs-state` “present”.
 
 **Verifica fase**
 - I test sui glob coprono `*`, `?`, `**`, `**/` e pattern con estensione.

@@ -104,6 +104,124 @@ class DocumentationMapTest(unittest.TestCase):
             self.assertIn("Unregistered documentation index: docs/index.md", issues.index)
             self.assertNotIn("docs/index.md", issues.unregistered)
 
+    def test_glob_semantics_apply_to_ignore_and_source_patterns(self):
+        documentation_map = DocumentationMap(Path("map.json"), {
+            "schemaVersion": 1,
+            "settings": {"ignorePatterns": ["src/*.tmp"]},
+            "documents": {
+                "single": {
+                    "path": "docs/single.md",
+                    "sourcePatterns": ["src/*.py"],
+                    "sourceHashes": {},
+                    "relatedDocuments": [],
+                },
+                "recursive": {
+                    "path": "docs/recursive.md",
+                    "sourcePatterns": ["src/**"],
+                    "sourceHashes": {},
+                    "relatedDocuments": [],
+                },
+                "tests": {
+                    "path": "docs/tests.md",
+                    "sourcePatterns": ["**/test/**"],
+                    "sourceHashes": {},
+                    "relatedDocuments": [],
+                },
+            },
+        })
+
+        self.assertTrue(documentation_map.is_ignored("src/a.tmp"))
+        self.assertFalse(documentation_map.is_ignored("src/nested/a.tmp"))
+        self.assertEqual({"single", "recursive"}, documentation_map.matching_documents("src/a.py"))
+        self.assertEqual({"recursive"}, documentation_map.matching_documents("src/a/b.py"))
+        self.assertEqual({"tests"}, documentation_map.matching_documents("test/a.py"))
+        self.assertEqual({"recursive", "tests"}, documentation_map.matching_documents("src/test/a.py"))
+
+    def test_recognizes_new_infrastructure_mobile_and_frontend_sources(self):
+        documentation_map = DocumentationMap(Path("map.json"), {
+            "schemaVersion": 1,
+            "settings": {},
+            "documents": {},
+        })
+
+        for path in (
+            "infra/main.tf",
+            "infra/production.tfvars",
+            "infra/config.hcl",
+            "infra/main.bicep",
+            "infra/flake.nix",
+            "mobile/lib/main.dart",
+            "mobile/ios/AppDelegate.m",
+            "mobile/ios/View.mm",
+            "firmware/sketch.ino",
+            "web/App.vue",
+            "web/App.svelte",
+            "web/page.astro",
+            "web/index.html",
+            "web/styles.scss",
+            "web/styles.less",
+            "web/styles.sass",
+            "web/styles.styl",
+            "config/app.ini",
+            "config/app.cfg",
+            "config/app.conf",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(documentation_map.is_relevant_source(path))
+
+    def test_relevant_names_are_case_insensitive(self):
+        documentation_map = DocumentationMap(Path("map.json"), {
+            "schemaVersion": 1,
+            "settings": {},
+            "documents": {},
+        })
+
+        for path in (
+            "Dockerfile",
+            "dockerfile",
+            "DOCKERFILE",
+            "Containerfile",
+            "Caddyfile",
+            "Procfile",
+            "nginx.conf",
+            "kustomization.yaml",
+            "Chart.yaml",
+            "values.yaml",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(documentation_map.is_relevant_source(path))
+
+    def test_lockfiles_and_generated_outputs_are_not_relevant_sources(self):
+        documentation_map = DocumentationMap(Path("map.json"), {
+            "schemaVersion": 1,
+            "settings": {},
+            "documents": {},
+        })
+
+        for path in (
+            "package-lock.json",
+            "npm-shrinkwrap.json",
+            "pnpm-lock.yaml",
+            "yarn.lock",
+            "bun.lockb",
+            "Cargo.lock",
+            "poetry.lock",
+            "Pipfile.lock",
+            "composer.lock",
+            "Gemfile.lock",
+            "go.sum",
+            "flake.lock",
+            "static/main.min.js",
+            "static/main.min.css",
+            "static/main.js.map",
+            "lib/model.g.dart",
+            "lib/model.freezed.dart",
+            "proto/service.pb.go",
+            "proto/service_pb2.py",
+        ):
+            with self.subTest(path=path):
+                self.assertFalse(documentation_map.is_relevant_source(path))
+
 
 if __name__ == "__main__":
     unittest.main()

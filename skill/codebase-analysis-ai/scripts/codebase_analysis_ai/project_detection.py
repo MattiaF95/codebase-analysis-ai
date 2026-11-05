@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
-from .path_filters import is_excluded_path
+from .path_filters import iter_repository_files
 
 
 SCHEMA_VERSION = 2
@@ -79,10 +79,8 @@ def inventory_project(root: Path) -> dict[str, object]:
     """Return path-only evidence for the parent agent's progressive analysis."""
     files = sorted(
         path.relative_to(root)
-        for path in root.rglob("*")
-        if path.is_file()
-        and not is_excluded_path(path.relative_to(root).parts)
-        and not _is_sensitive_path(path.relative_to(root))
+        for path in iter_repository_files(root)
+        if not _is_sensitive_path(path)
     )
 
     root_files, root_truncated = _bounded(
