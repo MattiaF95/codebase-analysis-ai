@@ -50,6 +50,7 @@ SECTION_LABELS = {
     "areas": "Documentation areas",
     "flows": "Main flows",
     "indexStatus": "Documentation status",
+    "documents": "Documents",
     "context": "Context",
     "contents": "What this area contains",
     "entryPoints": "Main entry points",
@@ -191,6 +192,15 @@ DOCUMENT_KINDS: dict[str, DocumentKind] = {
         lifecycle="living",
         index_policy="indexed",
         default_location="docs/backlog.md",
+    ),
+    "kind-index": DocumentKind(
+        id="kind-index",
+        required_sections=("coverage", "relatedDocumentation"),
+        recommended_sections=("documents",),
+        lifecycle="living",
+        index_policy="kind-index",
+        default_location="docs/<kind>/index.md",
+        source_patterns_required=False,
     ),
     "decision-record": DocumentKind(
         id="decision-record",

@@ -491,6 +491,165 @@ class CheckerIntegrationTest(unittest.TestCase):
             self.assertTrue(any("docs/backend/index.md" in error for error in report["navigationErrors"]))
             self.assertTrue(any("Missing documentation coverage" in error for error in report["coverageErrors"]))
 
+    def test_check_reports_invalid_adr_and_honors_warn_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            run("git", "init", "-b", "main", cwd=project)
+            (project / "docs" / "decisions").mkdir(parents=True)
+            (project / "docs" / "_meta").mkdir()
+            (project / "docs" / "index.md").write_text(
+                "# Documentation\n\n[Decisions](decisions/index.md)\n", encoding="utf-8"
+            )
+            (project / "docs" / "decisions" / "index.md").write_text(
+                "# Decision records\n\n## What this index covers\n\nIndice.\n\n"
+                "## Accepted\n\n- [ADR](ADR-0001-auth.md)\n\n"
+                "## Related documentation\n\nNessun collegamento.\n",
+                encoding="utf-8",
+            )
+            (project / "docs" / "decisions" / "ADR-0001-auth.md").write_text(
+                "# ADR-0001: Authentication\n\n"
+                "<!-- codebase-analysis-ai:scope:start -->\nRationale.\n"
+                "<!-- codebase-analysis-ai:scope:end -->\n\n"
+                "## Context\n\nContesto.\n\n## Decision\n\nDecisione.\n\n"
+                "## Alternatives considered\n\nAlternative.\n\n"
+                "## Consequences\n\nConseguenze.\n\n## Evidence\n\nEvidenza.\n\n"
+                "## Links\n\nCollegamenti.\n",
+                encoding="utf-8",
+            )
+            sections = {
+                "context": "Context",
+                "decision": "Decision",
+                "alternatives": "Alternatives considered",
+                "consequences": "Consequences",
+                "evidence": "Evidence",
+                "links": "Links",
+            }
+            (project / "docs" / "_meta" / "documentation-map.json").write_text(json.dumps({
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "index": {
+                        "path": "docs/index.md",
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    },
+                    "decisions": {
+                        "path": "docs/decisions/index.md",
+                        "documentKind": "kind-index",
+                        "sections": {
+                            "coverage": "What this index covers",
+                            "relatedDocumentation": "Related documentation",
+                        },
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    },
+                    "adr": {
+                        "path": "docs/decisions/ADR-0001-auth.md",
+                        "documentKind": "decision-record",
+                        "sections": sections,
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                        "metadata": {"status": "superseded", "date": "2026-01-31"},
+                    },
+                },
+            }), encoding="utf-8")
+
+            strict = run(
+                sys.executable, str(CLI), "--root", str(project), "check", "--mode", "working-tree", "--json",
+                cwd=project,
+            )
+            warned = run(
+                sys.executable, str(CLI), "--root", str(project), "check", "--mode", "working-tree",
+                "--warn-only", "--json", cwd=project,
+            )
+
+            self.assertEqual(1, strict.returncode, strict.stdout + strict.stderr)
+            strict_report = json.loads(strict.stdout)
+            self.assertTrue(any("supersededBy" in error for error in strict_report["adrErrors"]))
+            self.assertEqual(0, warned.returncode, warned.stdout + warned.stderr)
+            self.assertTrue(json.loads(warned.stdout)["adrErrors"])
+
+    def test_status_only_adr_change_does_not_produce_stale_document_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            run("git", "init", "-b", "main", cwd=project)
+            run("git", "config", "user.name", "Test", cwd=project)
+            run("git", "config", "user.email", "test@example.com", cwd=project)
+            (project / "docs" / "decisions").mkdir(parents=True)
+            (project / "docs" / "_meta").mkdir()
+            (project / "docs" / "index.md").write_text(
+                "# Documentation\n\n[Decisions](decisions/index.md)\n", encoding="utf-8"
+            )
+            (project / "docs" / "decisions" / "index.md").write_text(
+                "# Decision records\n\n## What this index covers\n\nIndice.\n\n"
+                "## Proposed\n\n- [ADR](ADR-0001-auth.md)\n\n"
+                "## Related documentation\n\nNessun collegamento.\n",
+                encoding="utf-8",
+            )
+            (project / "docs" / "decisions" / "ADR-0001-auth.md").write_text(
+                "# ADR-0001: Authentication\n\n"
+                "<!-- codebase-analysis-ai:scope:start -->\nRationale.\n"
+                "<!-- codebase-analysis-ai:scope:end -->\n\n"
+                "## Context\n\nContesto.\n\n## Decision\n\nDecisione.\n\n"
+                "## Alternatives considered\n\nAlternative.\n\n"
+                "## Consequences\n\nConseguenze.\n\n## Evidence\n\nEvidenza.\n\n"
+                "## Links\n\nCollegamenti.\n",
+                encoding="utf-8",
+            )
+            sections = {
+                "context": "Context",
+                "decision": "Decision",
+                "alternatives": "Alternatives considered",
+                "consequences": "Consequences",
+                "evidence": "Evidence",
+                "links": "Links",
+            }
+            mapping = {
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "index": {"path": "docs/index.md", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
+                    "decisions": {
+                        "path": "docs/decisions/index.md",
+                        "documentKind": "kind-index",
+                        "sections": {
+                            "coverage": "What this index covers",
+                            "relatedDocumentation": "Related documentation",
+                        },
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                    },
+                    "adr": {
+                        "path": "docs/decisions/ADR-0001-auth.md",
+                        "documentKind": "decision-record",
+                        "sections": sections,
+                        "sourcePatterns": [],
+                        "sourceHashes": {},
+                        "relatedDocuments": [],
+                        "metadata": {"status": "proposed", "date": "2026-01-31"},
+                    },
+                },
+            }
+            map_path = project / "docs" / "_meta" / "documentation-map.json"
+            map_path.write_text(json.dumps(mapping), encoding="utf-8")
+            run("git", "add", ".", cwd=project)
+            run("git", "commit", "-qm", "Initial", cwd=project)
+
+            mapping["documents"]["adr"]["metadata"]["status"] = "accepted"
+            map_path.write_text(json.dumps(mapping), encoding="utf-8")
+
+            result = run(
+                sys.executable, str(CLI), "--root", str(project), "check", "--mode", "working-tree", "--json",
+                cwd=project,
+            )
+
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual([], json.loads(result.stdout)["staleMappings"])
+
     def test_check_keeps_legacy_index_navigation_non_blocking(self):
         with tempfile.TemporaryDirectory() as directory:
             project = Path(directory)

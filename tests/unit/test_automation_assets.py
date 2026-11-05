@@ -108,5 +108,17 @@ class AutomationAssetsTest(unittest.TestCase):
                 content = (templates / name).read_text(encoding="utf-8")
                 self.assertIn("codebase-analysis-ai:scope:start", content)
 
+    def test_adr_templates_preserve_canonical_structure(self):
+        templates = SKILL / "assets" / "templates"
+        adr = (templates / "adr.md").read_text(encoding="utf-8")
+        self.assertIn("ADR-{{ number }}: {{ title }}", adr)
+        self.assertIn("Superseded by", adr)
+        for heading in ("Context", "Decision", "Alternatives considered", "Consequences", "Evidence", "Links"):
+            self.assertIn(f"## {heading}", adr)
+
+        index = (templates / "decisions-index.md").read_text(encoding="utf-8")
+        for status in ("Proposed", "Accepted", "Rejected", "Superseded", "Deprecated"):
+            self.assertIn(f"## {status}", index)
+
 if __name__ == "__main__":
     unittest.main()

@@ -116,6 +116,8 @@ Coverage is derived from the map and reports document counts by kind and decisio
 
 `docs/adr/` is recognized as a legacy alias of `docs/decisions/`. Existing ADRs keep their path, filename, and number; migration records them where they are and never renames or renumbers them automatically.
 
+Decision records follow `decision-records.md`. Use `ADR-NNNN: <decision>` as the title, keep the status/date/supersession block, and preserve the canonical `context`, `decision`, `alternatives`, `consequences`, `evidence`, and `links` sections. Accepted rationale is immutable; a changed decision creates a new ADR and marks the old one `superseded`. `docs/decisions/index.md` groups records by status and is linked from `docs/index.md`.
+
 ## Organize from context to detail
 
 Use this full sequence for topic documents, adapting labels to the selected language:

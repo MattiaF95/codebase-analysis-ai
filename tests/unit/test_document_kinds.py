@@ -29,6 +29,7 @@ class DocumentKindsTest(unittest.TestCase):
                 "runbook",
                 "test-strategy",
                 "backlog",
+                "kind-index",
                 "decision-record",
                 "reference",
                 "analysis-report",

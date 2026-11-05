@@ -7,8 +7,8 @@ RETRIAGE: NO
 - `PLAN_STATUS: IN_PROGRESS`
 - `EXECUTION_READINESS: READY`
 - `EXECUTION_SCOPE: FULL_PLAN`
-- `CURRENT_REQ: REQ-3.1.1`
-- `NEXT_ACTION: implement Phase 3 REQ-3.1.1 through REQ-3.1.5, verify, review, and commit`
+- `CURRENT_REQ: REQ-4.1.1`
+- `NEXT_ACTION: implement Phase 4 REQ-4.1.1 through REQ-4.1.5, verify, review, and commit`
 - `COMPLETION_ALLOWED: NO`
 
 ## 1. Objective
@@ -77,11 +77,11 @@ Rendere il modello documentale capace di distinguere il tipo di documento oltre 
 
 ### 5.1 Formato, indice e ciclo di vita
 
-- [ ] REQ-3.1.1 Template ADR: esiste un template con titolo `ADR-NNNN: <decisione>`, blocco stato/data/sostituzioni/piano e sezioni per contesto, decisione, alternative considerate, conseguenze, evidenza e collegamenti; il template è localizzabile senza cambiare i nomi canonici dei file.
-- [ ] REQ-3.1.2 Indice ADR: esiste un template per `docs/decisions/index.md` che elenca gli ADR raggruppati per stato, con una sintesi di una riga e link a ogni decisione; `docs/index.md` linka l'indice ADR.
-- [ ] REQ-3.1.3 Registrazione nella mappa: ogni ADR è registrato con `documentKind: decision-record`, `sections` localizzate, `sourcePatterns: []`, `sourceHashes: {}` e `metadata` con stato, data, `supersedes`, `supersededBy` e piani correlati opzionali.
-- [ ] REQ-3.1.4 Validazione ADR: il gate verifica numero univoco e coerente con il filename, stato ammesso, sezioni obbligatorie, catena `supersedes`/`supersededBy` coerente, presenza nell'indice e link validi verso documenti e piani; non aggiorna prosa né hash degli ADR.
-- [ ] REQ-3.1.5 Ciclo di vita e migrazione: un ADR `accepted` è immutabile salvo cambio di stato; una decisione nuova che sostituisce la precedente crea un nuovo ADR e marca il vecchio `superseded`; gli ADR esistenti in `docs/adr/` o `docs/decisions/` vengono riconosciuti e registrati senza rinomina o rinumerazione automatica.
+- [x] REQ-3.1.1 Template ADR: esiste un template con titolo `ADR-NNNN: <decisione>`, blocco stato/data/sostituzioni/piano e sezioni per contesto, decisione, alternative considerate, conseguenze, evidenza e collegamenti; il template è localizzabile senza cambiare i nomi canonici dei file.
+- [x] REQ-3.1.2 Indice ADR: esiste un template per `docs/decisions/index.md` che elenca gli ADR raggruppati per stato, con una sintesi di una riga e link a ogni decisione; `docs/index.md` linka l'indice ADR.
+- [x] REQ-3.1.3 Registrazione nella mappa: ogni ADR è registrato con `documentKind: decision-record`, `sections` localizzate, `sourcePatterns: []`, `sourceHashes: {}` e `metadata` con stato, data, `supersedes`, `supersededBy` e piani correlati opzionali.
+- [x] REQ-3.1.4 Validazione ADR: il gate verifica numero univoco e coerente con il filename, stato ammesso, sezioni obbligatorie, catena `supersedes`/`supersededBy` coerente, presenza nell'indice e link validi verso documenti e piani; non aggiorna prosa né hash degli ADR.
+- [x] REQ-3.1.5 Ciclo di vita e migrazione: un ADR `accepted` è immutabile salvo cambio di stato; una decisione nuova che sostituisce la precedente crea un nuovo ADR e marca il vecchio `superseded`; gli ADR esistenti in `docs/adr/` o `docs/decisions/` vengono riconosciuti e registrati senza rinomina o rinumerazione automatica.
 
 **Verifica fase**
 - Un ADR valido compare nell'indice e nella coverage; un numero duplicato o un filename incoerente fallisce.
