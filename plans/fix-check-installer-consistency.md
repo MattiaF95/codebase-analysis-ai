@@ -4,11 +4,11 @@ ANALYSIS: COMPLETE
 RETRIAGE: NO
 
 ## Agent execution header
-- `PLAN_STATUS: OPEN`
+- `PLAN_STATUS: IN_PROGRESS`
 - `EXECUTION_READINESS: READY`
 - `EXECUTION_SCOPE: FULL_PLAN`
-- `CURRENT_REQ: none`
-- `NEXT_ACTION: execute REQ-1.1.1 (validate changed documents), then continue in plan order`
+- `CURRENT_REQ: REQ-2.1.1`
+- `NEXT_ACTION: implement Phase 2 REQ-2.1.1 through REQ-2.1.4, verify, review, and commit`
 - `COMPLETION_ALLOWED: NO`
 
 ## 1. Objective
@@ -47,12 +47,12 @@ Correggere le lacune del gate deterministico (`check`), le ambiguità dell'insta
 
 ### 3.1 Gate documentale e raccolta cambiamenti
 
-- [ ] REQ-1.1.1 Validazione dei documenti modificati: un cambiamento che tocca solo `docs/**` con un link rotto produce un errore bloccante in `check`/CI; contenuto e hash del documento restano invariati.
-- [ ] REQ-1.1.2 Esistenza e index: la cancellazione di un documento registrato, la cancellazione di `docs/index.md` o la presenza di `docs/index.md` non registrato producono un errore esplicito.
-- [ ] REQ-1.1.3 Copertura della mappa: ogni documento attivo `docs/**/*.md` non registrato produce un errore di copertura, con esenzione per `docs/_meta/**` e `docs/_archive/**`; le mappe legacy continuano a caricarsi.
-- [ ] REQ-1.1.4 Delete e rename: i path sorgente rimossi o rinominati non vengono più classificati come `Unmapped source`; restano soggetti a manutenzione della mappa quando erano mappati, e il nuovo path continua a essere verificato.
-- [ ] REQ-1.1.5 Repository senza commit: `check --mode working-tree` funziona in un repository senza HEAD; gli OID di push nulli sono riconosciuti sia a 40 sia a 64 caratteri.
-- [ ] REQ-1.1.6 Contratto di errore: `--warn-only` restituisce 0 per ogni fallimento di `check`, gli errori di mappa interrompono l'analisi prima dell'impact resolution, e `--json` emette sempre un report JSON valido senza traceback.
+- [x] REQ-1.1.1 Validazione dei documenti modificati: un cambiamento che tocca solo `docs/**` con un link rotto produce un errore bloccante in `check`/CI; contenuto e hash del documento restano invariati.
+- [x] REQ-1.1.2 Esistenza e index: la cancellazione di un documento registrato, la cancellazione di `docs/index.md` o la presenza di `docs/index.md` non registrato producono un errore esplicito.
+- [x] REQ-1.1.3 Copertura della mappa: ogni documento attivo `docs/**/*.md` non registrato produce un errore di copertura, con esenzione per `docs/_meta/**` e `docs/_archive/**`; le mappe legacy continuano a caricarsi.
+- [x] REQ-1.1.4 Delete e rename: i path sorgente rimossi o rinominati non vengono più classificati come `Unmapped source`; restano soggetti a manutenzione della mappa quando erano mappati, e il nuovo path continua a essere verificato.
+- [x] REQ-1.1.5 Repository senza commit: `check --mode working-tree` funziona in un repository senza HEAD; gli OID di push nulli sono riconosciuti sia a 40 sia a 64 caratteri.
+- [x] REQ-1.1.6 Contratto di errore: `--warn-only` restituisce 0 per ogni fallimento di `check`, gli errori di mappa interrompono l'analisi prima dell'impact resolution, e `--json` emette sempre un report JSON valido senza traceback.
 
 **Verifica fase**
 - I test di regressione dei cinque scenari (link rotto in docs-only, index cancellato, documento non registrato, pattern invalido con `--warn-only`, repo senza commit) passano.

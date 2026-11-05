@@ -337,6 +337,81 @@ class DocumentationMap:
         hashes[normalized] = digest
 
 
+DOCUMENTATION_INDEX = "docs/index.md"
+DOCUMENTATION_EXEMPT_PREFIXES = ("docs/_meta/", "docs/_archive/")
+
+
+@dataclass(frozen=True)
+class DocumentationIssues:
+    missing: tuple[str, ...] = ()
+    unregistered: tuple[str, ...] = ()
+    index: tuple[str, ...] = ()
+
+    @property
+    def errors(self) -> tuple[str, ...]:
+        return (
+            *(f"Missing document: {path}" for path in self.missing),
+            *(f"Unregistered document: {path}" for path in self.unregistered),
+            *self.index,
+        )
+
+
+def registered_document_paths(documentation_map: DocumentationMap) -> set[str]:
+    """Return the canonical path of every document recorded in the map."""
+    registered: set[str] = set()
+    for document in documentation_map.documents.values():
+        if not isinstance(document, dict):
+            continue
+        path = document.get("path")
+        if not isinstance(path, str) or not path:
+            continue
+        try:
+            registered.add(normalize_repository_path(path))
+        except MapError:
+            continue
+    return registered
+
+
+def active_document_paths(root: Path) -> list[str]:
+    """List active Markdown documents under docs/, excluding metadata and archives."""
+    docs = root / "docs"
+    if not docs.is_dir():
+        return []
+    documents: list[str] = []
+    for candidate in docs.rglob("*.md"):
+        if not candidate.is_file():
+            continue
+        relative = candidate.relative_to(root).as_posix()
+        if relative.startswith(DOCUMENTATION_EXEMPT_PREFIXES):
+            continue
+        documents.append(relative)
+    return sorted(documents)
+
+
+def documentation_issues(root: Path, documentation_map: DocumentationMap) -> DocumentationIssues:
+    """Validate document existence, index registration and map coverage."""
+    registered = registered_document_paths(documentation_map)
+    missing = tuple(
+        path
+        for path in sorted(registered)
+        if not (root / path).is_file()
+    )
+    index_path = root / DOCUMENTATION_INDEX
+    index_exists = index_path.is_file()
+    index_errors: list[str] = []
+    if index_exists and DOCUMENTATION_INDEX not in registered:
+        index_errors.append(f"Unregistered documentation index: {DOCUMENTATION_INDEX}")
+    active = active_document_paths(root)
+    if not index_exists and active:
+        index_errors.append(f"Missing documentation index: {DOCUMENTATION_INDEX}")
+    unregistered = tuple(
+        path
+        for path in active
+        if path not in registered and path != DOCUMENTATION_INDEX
+    )
+    return DocumentationIssues(missing, unregistered, tuple(index_errors))
+
+
 def load_map(root: Path) -> DocumentationMap:
     path = root / "docs" / "_meta" / "documentation-map.json"
     if not path.is_file():

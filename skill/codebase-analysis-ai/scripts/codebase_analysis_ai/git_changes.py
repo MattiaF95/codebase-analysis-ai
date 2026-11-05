@@ -13,6 +13,11 @@ from typing import Iterable, Sequence
 ZERO_SHA = "0" * 40
 
 
+def is_zero_oid(value: str) -> bool:
+    """Recognize the null object ID used by SHA-1 and SHA-256 repositories."""
+    return len(value) in {40, 64} and all(character == "0" for character in value)
+
+
 @dataclass(frozen=True)
 class Change:
     path: str
@@ -167,8 +172,13 @@ def root_history_changes(root: Path, head: str) -> list[Change]:
 
 def working_tree_changes(root: Path) -> list[Change]:
     changes: list[Change] = []
-    changes.extend(_parse_name_status_z(run_git_bytes(root, "diff", "--name-status", "-z", "--find-renames", "HEAD")))
-    changes.extend(_parse_name_status_z(run_git_bytes(root, "diff", "--cached", "--name-status", "-z", "--find-renames", "HEAD")))
+    if _git_succeeds(root, "rev-parse", "--verify", "HEAD"):
+        changes.extend(_parse_name_status_z(run_git_bytes(root, "diff", "--name-status", "-z", "--find-renames", "HEAD")))
+        changes.extend(_parse_name_status_z(run_git_bytes(root, "diff", "--cached", "--name-status", "-z", "--find-renames", "HEAD")))
+    else:
+        for path in run_git_bytes(root, "ls-files", "-z").split(b"\0"):
+            if path:
+                changes.append(Change(path=_decode_path(path), status="A"))
     for path in run_git_bytes(root, "ls-files", "-z", "--others", "--exclude-standard").split(b"\0"):
         if path:
             changes.append(Change(path=_decode_path(path), status="A"))
@@ -185,9 +195,9 @@ def pre_push_changes(root: Path, lines: Iterable[str]) -> list[Change]:
         if len(parts) != 4:
             raise GitError("invalid pre-push input: expected four fields")
         _local_ref, local_oid, _remote_ref, remote_oid = parts
-        if local_oid == ZERO_SHA:
+        if is_zero_oid(local_oid):
             continue
-        if remote_oid == ZERO_SHA:
+        if is_zero_oid(remote_oid):
             changes.extend(new_ref_changes(root, local_oid))
         else:
             changes.extend(range_changes(root, remote_oid, local_oid))
@@ -236,7 +246,7 @@ def ci_event_changes(root: Path, event_name: str, event_path: Path) -> list[Chan
         head = _event_string(event, "after")
         if base is not None and not isinstance(base, str):
             raise GitError("invalid CI event: before must be a string")
-        if not base or base == ZERO_SHA:
+        if not base or is_zero_oid(base):
             return root_history_changes(root, head)
         return range_changes(root, base, head)
     if event_name == "merge_group":
@@ -254,4 +264,25 @@ def paths(changes: Sequence[Change]) -> list[str]:
         if change.status == "R" and change.old_path:
             result.append(change.old_path.replace("\\", "/"))
         result.append(change.path.replace("\\", "/"))
+    return list(dict.fromkeys(result))
+
+
+def live_paths(changes: Sequence[Change]) -> list[str]:
+    """Return paths that still exist after the changes, using rename destinations."""
+    result: list[str] = []
+    for change in changes:
+        if change.status == "D":
+            continue
+        result.append(change.path.replace("\\", "/"))
+    return list(dict.fromkeys(result))
+
+
+def removed_paths(changes: Sequence[Change]) -> list[str]:
+    """Return deleted paths and the old paths of renames."""
+    result: list[str] = []
+    for change in changes:
+        if change.status == "D":
+            result.append(change.path.replace("\\", "/"))
+        elif change.status == "R" and change.old_path:
+            result.append(change.old_path.replace("\\", "/"))
     return list(dict.fromkeys(result))

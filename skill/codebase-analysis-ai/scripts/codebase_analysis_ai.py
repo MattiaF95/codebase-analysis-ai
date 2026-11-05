@@ -10,6 +10,7 @@ from pathlib import Path
 
 from codebase_analysis_ai.documentation_map import (
     MapError,
+    documentation_issues,
     load_map,
     normalize_repository_path,
     resolve_repository_path,
@@ -18,10 +19,13 @@ from codebase_analysis_ai.documentation_preflight import first_documentation_fil
 from codebase_analysis_ai.document_validator import validate_documents
 from codebase_analysis_ai.git_changes import (
     Change,
+    GitError,
     ci_event_changes,
+    live_paths,
     paths as change_paths,
     pre_push_changes,
     range_changes,
+    removed_paths,
     repository_root,
     rewrite_changes,
     working_tree_changes,
@@ -51,37 +55,110 @@ def _collect_changes(args: argparse.Namespace, root: Path) -> list[Change]:
     return working_tree_changes(root)
 
 
+def _empty_check_report(args: argparse.Namespace) -> dict[str, object]:
+    return {
+        "mode": getattr(args, "mode", "working-tree"),
+        "changedFiles": [],
+        "directDocuments": [],
+        "relatedDocuments": [],
+        "changedDocuments": [],
+        "unmappedFiles": [],
+        "staleMappings": [],
+        "linkErrors": [],
+        "mapErrors": [],
+        "missingDocuments": [],
+        "unregisteredDocuments": [],
+        "indexErrors": [],
+        "removedMappings": [],
+        "errors": [],
+    }
+
+
+def _print_check_failure(
+    args: argparse.Namespace,
+    message: str,
+    *,
+    returncode: int,
+    map_errors: list[str] | None = None,
+    errors: list[str] | None = None,
+) -> int:
+    report = _empty_check_report(args)
+    report["mapErrors"] = list(map_errors or [])
+    report["errors"] = list(errors or [message])
+    if getattr(args, "json", False):
+        print(json.dumps(report, indent=2))
+    print(f"Codebase Analysis AI: {message}", file=sys.stderr)
+    for error in report["errors"]:
+        if error != message:
+            print(f"- {error}", file=sys.stderr)
+    return 0 if getattr(args, "warn_only", False) else returncode
+
+
 def command_check(args: argparse.Namespace) -> int:
-    root = _root(args.root)
+    try:
+        root = _root(args.root)
+    except (GitError, OSError) as exc:
+        return _print_check_failure(args, str(exc), returncode=2)
+
     try:
         documentation_map = load_map(root)
     except MapError as exc:
-        print(f"Codebase Analysis AI: {exc}", file=sys.stderr)
-        print("Run an explicit documentation bootstrap or migration before incremental checks.", file=sys.stderr)
-        return 0 if args.warn_only else 2
+        return _print_check_failure(args, str(exc), returncode=2, map_errors=[str(exc)])
 
     map_errors = documentation_map.validate()
-    changes = _collect_changes(args, root)
-    changed_paths = change_paths(changes)
-    impact = resolve_impact(documentation_map, changed_paths)
+    if map_errors:
+        return _print_check_failure(
+            args,
+            "documentation map validation failed",
+            returncode=2,
+            map_errors=map_errors,
+            errors=map_errors,
+        )
 
-    stale: list[str] = []
-    for path in changed_paths:
-        if path in impact.changed_documents:
-            continue
-        current = sha256_file(resolve_repository_path(root, path))
-        for doc_id in documentation_map.matching_documents(path):
-            recorded = documentation_map.recorded_hash(doc_id, path)
-            if recorded != current:
-                stale.append(f"{path} -> {doc_id}")
+    try:
+        issues = documentation_issues(root, documentation_map)
+        changes = _collect_changes(args, root)
+        changed_paths = change_paths(changes)
+        live = live_paths(changes)
+        removed = removed_paths(changes)
+        impact = resolve_impact(documentation_map, live)
 
-    document_paths = [
-        normalize_repository_path(documentation_map.documents[doc_id]["path"])
-        for doc_id in impact.all_documents
-        if doc_id in documentation_map.documents and documentation_map.documents[doc_id].get("path")
+        stale: list[str] = []
+        for path in live:
+            if path in impact.changed_documents:
+                continue
+            current = sha256_file(resolve_repository_path(root, path))
+            for doc_id in documentation_map.matching_documents(path):
+                recorded = documentation_map.recorded_hash(doc_id, path)
+                if recorded != current:
+                    stale.append(f"{path} -> {doc_id}")
+
+        removed_mappings: list[str] = []
+        for path in removed:
+            for doc_id in sorted(documentation_map.documents):
+                if documentation_map.recorded_hash(doc_id, path) is not None:
+                    removed_mappings.append(f"{path} -> {doc_id}")
+
+        document_paths = sorted({
+            *(
+                normalize_repository_path(documentation_map.documents[doc_id]["path"])
+                for doc_id in impact.all_documents
+                if doc_id in documentation_map.documents and documentation_map.documents[doc_id].get("path")
+            ),
+            *impact.changed_documents,
+        })
+        link_errors = validate_links(root, document_paths)
+    except (MapError, GitError, OSError) as exc:
+        return _print_check_failure(args, str(exc), returncode=2)
+
+    document_errors = list(issues.errors)
+    errors = [
+        *document_errors,
+        *[f"Unmapped source: {path}" for path in impact.unmapped],
+        *[f"Stale: {item}" for item in stale],
+        *[f"Removed source still mapped: {item}" for item in removed_mappings],
+        *link_errors,
     ]
-    link_errors = validate_links(root, document_paths)
-    errors = [*map_errors, *[f"Unmapped source: {path}" for path in impact.unmapped], *[f"Stale: {item}" for item in stale], *link_errors]
 
     report = {
         "mode": args.mode,
@@ -93,6 +170,11 @@ def command_check(args: argparse.Namespace) -> int:
         "staleMappings": stale,
         "linkErrors": link_errors,
         "mapErrors": map_errors,
+        "missingDocuments": list(issues.missing),
+        "unregisteredDocuments": list(issues.unregistered),
+        "indexErrors": list(issues.index),
+        "removedMappings": removed_mappings,
+        "errors": errors,
     }
     if args.json:
         print(json.dumps(report, indent=2))
@@ -231,6 +313,13 @@ def main() -> int:
     try:
         return args.handler(args)
     except (MapError, OSError, RuntimeError) as exc:
+        if getattr(args, "command", None) == "check":
+            return _print_check_failure(
+                args,
+                str(exc),
+                returncode=2,
+                map_errors=[str(exc)] if isinstance(exc, MapError) else None,
+            )
         print(f"Codebase Analysis AI error: {exc}", file=sys.stderr)
         return 2
 

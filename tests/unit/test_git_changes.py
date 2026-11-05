@@ -14,9 +14,12 @@ from codebase_analysis_ai.git_changes import (  # noqa: E402
     GitError,
     ZERO_SHA,
     ci_event_changes,
+    is_zero_oid,
+    live_paths,
     new_ref_changes,
     paths,
     pre_push_changes,
+    removed_paths,
     rewrite_changes,
     working_tree_changes,
 )
@@ -95,6 +98,53 @@ class GitChangesTest(unittest.TestCase):
             changes = ci_event_changes(root, "push", event)
 
             self.assertEqual(["one.py", "two.py"], paths(changes))
+
+    def test_live_and_removed_paths_ignore_deleted_and_renamed_sources(self):
+        changes = [
+            Change(path="src/new.py", old_path="src/old.py", status="R"),
+            Change(path="src/deleted.py", status="D"),
+            Change(path="src/added.py", status="A"),
+            Change(path="src/modified.py", status="M"),
+        ]
+
+        self.assertEqual(["src/new.py", "src/added.py", "src/modified.py"], live_paths(changes))
+        self.assertEqual(["src/old.py", "src/deleted.py"], removed_paths(changes))
+
+    def test_recognizes_sha1_and_sha256_null_oids(self):
+        self.assertTrue(is_zero_oid(ZERO_SHA))
+        self.assertTrue(is_zero_oid("0" * 64))
+        self.assertFalse(is_zero_oid("0" * 39))
+        self.assertFalse(is_zero_oid("0" * 63))
+        self.assertFalse(is_zero_oid("0" * 63 + "1"))
+
+    def test_pre_push_and_ci_recognize_sha256_null_oid_for_new_refs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._repository(directory)
+            head = self._commit(root, "one.py", "one\n", "one")
+            null_oid = "0" * 64
+
+            pushed = pre_push_changes(
+                root,
+                [f"refs/heads/main {head} refs/heads/main {null_oid}\n"],
+            )
+            event = root / "event.json"
+            event.write_text(json.dumps({"before": null_oid, "after": head}), encoding="utf-8")
+            from_event = ci_event_changes(root, "push", event)
+
+            self.assertEqual(["one.py"], paths(pushed))
+            self.assertEqual(["one.py"], paths(from_event))
+
+    def test_working_tree_without_head_collects_index_and_untracked_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._repository(directory)
+            (root / "staged.py").write_text("staged\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(root), "add", "staged.py"], check=True)
+            (root / "untracked.py").write_text("untracked\n", encoding="utf-8")
+
+            changes = working_tree_changes(root)
+
+            self.assertEqual(["staged.py", "untracked.py"], paths(changes))
+            self.assertTrue(all(change.status == "A" for change in changes))
 
     def test_malformed_hook_input_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:
