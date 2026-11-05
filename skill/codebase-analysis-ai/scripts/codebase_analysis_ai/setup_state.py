@@ -47,7 +47,9 @@ def _file_state(path: Path, expected: str | None = None) -> str:
     content = path.read_text(encoding="utf-8", errors="replace")
     if MANAGED not in content:
         return "unmanaged"
-    return "outdated" if expected is not None and content != expected else "managed"
+    if expected is None:
+        return "unverified"
+    return "outdated" if content != expected else "managed"
 
 
 def _hook_state(path: Path, expected: str | None = None) -> str:
@@ -64,7 +66,9 @@ def _adapter_state(path: Path, agent: str, expected_block: str | None = None) ->
     expected = f"setup-state --agents {agent}"
     if START not in content:
         return "unmanaged"
-    if expected not in content or (expected_block is not None and expected_block.strip() not in content):
+    if expected_block is None:
+        return "unverified"
+    if expected not in content or expected_block.strip() not in content:
         return "outdated"
     return "managed"
 

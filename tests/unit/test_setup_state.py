@@ -66,6 +66,32 @@ class SetupStateTest(unittest.TestCase):
 
             self.assertEqual("unverified", json.loads(result.stdout)["runtime"])
 
+    def test_installed_runtime_reports_components_without_assets_as_unverified(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            install_project_components(
+                root,
+                ["codex", "claude", "gemini", "copilot"],
+                True,
+                True,
+                True,
+            )
+            installed = root / "tools" / "codebase-analysis-ai" / "check.py"
+
+            result = subprocess.run(
+                [sys.executable, str(installed), "--root", str(root), "setup-state", "--agents", "all"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            state = json.loads(result.stdout)
+            self.assertEqual("unverified", state["runtime"])
+            self.assertTrue(all(value == "unverified" for value in state["adapters"].values()))
+            self.assertTrue(all(value == "unverified" for value in state["hooks"].values()))
+            self.assertEqual("unverified", state["githubAction"])
+
     def test_reports_runtime_with_unexpected_python_files_as_outdated(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

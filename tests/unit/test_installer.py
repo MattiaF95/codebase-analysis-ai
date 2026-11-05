@@ -1,7 +1,9 @@
+import io
 import sys
 import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 from unittest import mock
 
@@ -214,6 +216,123 @@ class InstallerTest(unittest.TestCase):
                     install_project_components(root, agents, with_agents, with_hooks, with_action)
 
                 self.assertFalse((root / "tools" / "codebase-analysis-ai").exists())
+
+    def test_runtime_extra_non_python_files_are_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install_project_components(root, ["codex"], False, False, False)
+            runtime = root / "tools" / "codebase-analysis-ai"
+            note = runtime / "codebase_analysis_ai" / "notes.txt"
+            note.write_text("local note\n", encoding="utf-8")
+            root_note = runtime / "extra.json"
+            root_note.write_text("{}\n", encoding="utf-8")
+
+            install_project_components(root, ["codex"], False, False, False)
+
+            self.assertEqual("local note\n", note.read_text(encoding="utf-8"))
+            self.assertEqual("{}\n", root_note.read_text(encoding="utf-8"))
+
+    def test_external_githooks_symlink_is_rejected_without_writes(self):
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+            root = Path(directory)
+            external = Path(outside) / "hooks"
+            external.mkdir()
+            (root / ".githooks").symlink_to(external, target_is_directory=True)
+
+            with self.assertRaisesRegex(project_installer.InstallConflict, "symlink outside project"):
+                install_project_components(root, ["codex"], False, True, False)
+
+            self.assertEqual([], list(external.iterdir()))
+            self.assertFalse((root / "tools").exists())
+
+    def test_external_tools_symlink_is_rejected_without_writes(self):
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+            root = Path(directory)
+            external = Path(outside) / "tools"
+            external.mkdir()
+            (root / "tools").symlink_to(external, target_is_directory=True)
+
+            with self.assertRaisesRegex(project_installer.InstallConflict, "symlink outside project"):
+                install_project_components(root, ["codex"], False, False, False)
+
+            self.assertEqual([], list(external.iterdir()))
+
+    def test_external_github_symlink_is_rejected_without_writes(self):
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+            root = Path(directory)
+            external = Path(outside) / "github"
+            external.mkdir()
+            (root / ".github").symlink_to(external, target_is_directory=True)
+
+            with self.assertRaisesRegex(project_installer.InstallConflict, "symlink outside project"):
+                install_project_components(root, ["codex"], False, False, True)
+
+            self.assertEqual([], list(external.iterdir()))
+            self.assertFalse((root / "tools").exists())
+
+    def test_failure_after_skill_install_restores_new_skill(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".git").mkdir()
+            argv = ["install.py", "--project-root", str(root), "--agent", "codex"]
+            stderr = io.StringIO()
+
+            with mock.patch.object(
+                skill_distribution_installer,
+                "install_project_components",
+                side_effect=OSError("injected project failure"),
+            ), mock.patch.object(sys, "argv", argv), redirect_stderr(stderr):
+                result = skill_distribution_installer.main()
+
+            self.assertEqual(2, result)
+            self.assertIn("Codebase Analysis AI setup stopped", stderr.getvalue())
+            self.assertIn("injected project failure", stderr.getvalue())
+            self.assertNotIn("Traceback", stderr.getvalue())
+            self.assertFalse((root / ".agents").exists())
+
+    def test_failure_after_skill_install_restores_previous_skill(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".git").mkdir()
+            target = skill_distribution_installer.destination("codex", "project", root)
+            skill_distribution_installer.install_skill(target)
+            skill_file = target / "SKILL.md"
+            previous = skill_file.read_text(encoding="utf-8") + "\nlocal change\n"
+            skill_file.write_text(previous, encoding="utf-8")
+            skill_file.chmod(0o600)
+            extra = target / "keep.txt"
+            extra.write_text("keep\n", encoding="utf-8")
+            argv = ["install.py", "--project-root", str(root), "--agent", "codex"]
+            stderr = io.StringIO()
+
+            with mock.patch.object(
+                skill_distribution_installer,
+                "install_project_components",
+                side_effect=RuntimeError("injected project failure"),
+            ), mock.patch.object(sys, "argv", argv), redirect_stderr(stderr):
+                result = skill_distribution_installer.main()
+
+            self.assertEqual(2, result)
+            self.assertNotIn("Traceback", stderr.getvalue())
+            self.assertEqual(previous, skill_file.read_text(encoding="utf-8"))
+            self.assertEqual(0o600, skill_file.stat().st_mode & 0o777)
+            self.assertEqual("keep\n", extra.read_text(encoding="utf-8"))
+
+    def test_preflight_conflict_stops_before_skill_install(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".githooks").mkdir()
+            (root / ".githooks" / "pre-push").write_text("#!/bin/sh\ncustom\n", encoding="utf-8")
+            argv = ["install.py", "--project-root", str(root), "--agent", "codex"]
+            stderr = io.StringIO()
+
+            with mock.patch.object(sys, "argv", argv), redirect_stderr(stderr):
+                result = skill_distribution_installer.main()
+
+            self.assertEqual(2, result)
+            self.assertIn("Codebase Analysis AI setup stopped", stderr.getvalue())
+            self.assertNotIn("Traceback", stderr.getvalue())
+            self.assertFalse((root / ".agents").exists())
 
     def test_failure_rolls_back_files_permissions_and_git_configuration(self):
         with tempfile.TemporaryDirectory() as directory:

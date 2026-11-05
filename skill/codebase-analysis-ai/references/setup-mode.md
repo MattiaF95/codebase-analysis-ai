@@ -20,3 +20,11 @@ Use setup mode after an explicit setup request or after the user confirms a setu
 8. Report every created, refreshed, retained, or conflicted component and any local-only Git configuration. Do not classify agent rule files or installed automation as project documentation.
 
 Setup must be idempotent. Re-running it must preserve current managed components, refresh only outdated managed content, and preserve unrelated instructions and automation.
+
+## Managed file ownership
+
+The skill, runtime, agent blocks, hooks, and workflow are owned only when their managed marker (`name: codebase-analysis-ai`, `Managed by Codebase Analysis AI`, or the managed HTML block) is present. Targets without the marker are rejected instead of being overwritten silently.
+
+Extra files inside an installed skill or runtime directory are never deleted. Unexpected Python files under the installed runtime package are reported as a conflict and stop the installation; other extra files are preserved. Installation is transactional: the complete preflight runs before the first write, a failure restores previous files and permissions (and the skill when it was already installed), and the command exits with a controlled error instead of a traceback.
+
+When `setup-state` runs from an installed runtime it has no bundled assets to compare against, so existing managed adapters, hooks, and workflow are reported as `unverified`, not `managed`. Run setup discovery from the skill bundle for a full comparison.

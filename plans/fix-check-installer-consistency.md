@@ -7,8 +7,8 @@ RETRIAGE: NO
 - `PLAN_STATUS: IN_PROGRESS`
 - `EXECUTION_READINESS: READY`
 - `EXECUTION_SCOPE: FULL_PLAN`
-- `CURRENT_REQ: REQ-2.1.1`
-- `NEXT_ACTION: implement Phase 2 REQ-2.1.1 through REQ-2.1.4, verify, review, and commit`
+- `CURRENT_REQ: REQ-3.1.1`
+- `NEXT_ACTION: implement Phase 3 REQ-3.1.1 through REQ-3.1.4, verify, review, and commit`
 - `COMPLETION_ALLOWED: NO`
 
 ## 1. Objective
@@ -63,10 +63,10 @@ Correggere le lacune del gate deterministico (`check`), le ambiguità dell'insta
 
 ### 4.1 Installazione transazionale e stato reale
 
-- [ ] REQ-2.1.1 Installazione transazionale: `install.py` esegue il preflight di skill e componenti prima di qualunque scrittura, valida il project root, ripristina file e permessi in caso di errore e termina con un messaggio controllato anziché un traceback.
-- [ ] REQ-2.1.2 Contenimento symlink: tutti i target di progetto (runtime, hook, workflow, regole agente) rifiutano target o parent symlink che risolvono fuori dal repository, con lo stesso livello di protezione già presente per la skill.
-- [ ] REQ-2.1.3 `setup-state` veritiero: dal runtime installato, adapter, hook e workflow risultano `unverified` quando gli asset attesi non sono disponibili; il runtime resta `unverified` e il skill bundle mantiene il confronto completo.
-- [ ] REQ-2.1.4 Proprietà dei file gestiti: il comportamento di aggiornamento di skill e runtime è documentato e testato come unità gestita dal marker; i file extra restano preservati o segnalati, e un target privo di marker non viene sovrascritto silenziosamente.
+- [x] REQ-2.1.1 Installazione transazionale: `install.py` esegue il preflight di skill e componenti prima di qualunque scrittura, valida il project root, ripristina file e permessi in caso di errore e termina con un messaggio controllato anziché un traceback.
+- [x] REQ-2.1.2 Contenimento symlink: tutti i target di progetto (runtime, hook, workflow, regole agente) rifiutano target o parent symlink che risolvono fuori dal repository, con lo stesso livello di protezione già presente per la skill.
+- [x] REQ-2.1.3 `setup-state` veritiero: dal runtime installato, adapter, hook e workflow risultano `unverified` quando gli asset attesi non sono disponibili; il runtime resta `unverified` e il skill bundle mantiene il confronto completo.
+- [x] REQ-2.1.4 Proprietà dei file gestiti: il comportamento di aggiornamento di skill e runtime è documentato e testato come unità gestita dal marker; i file extra restano preservati o segnalati, e un target privo di marker non viene sovrascritto silenziosamente.
 
 **Verifica fase**
 - Un conflitto su un hook o workflow non lascia la skill installata e non produce traceback.

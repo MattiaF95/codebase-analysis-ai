@@ -15,6 +15,14 @@ END = "<!-- codebase-analysis-ai:end -->"
 MANAGED = "Managed by Codebase Analysis AI"
 RUNTIME_MARKER = "Codebase Analysis AI deterministic CLI."
 
+AGENT_TARGETS = {
+    "codex": ("AGENTS.md", "AGENTS.md"),
+    "claude": ("CLAUDE.md", "CLAUDE.md"),
+    "gemini": ("GEMINI.md", "GEMINI.md"),
+    "copilot": ("copilot-instructions.md", ".github/copilot-instructions.md"),
+}
+HOOK_NAMES = ("post-commit", "pre-push", "post-merge", "post-rewrite")
+
 
 class InstallConflict(RuntimeError):
     pass
@@ -125,6 +133,39 @@ def _copy_managed_file(source: Path, target: Path, replacements: dict[str, str] 
     return action
 
 
+def _normalize_agents(agents: Iterable[str]) -> list[str]:
+    requested_agents = list(dict.fromkeys(agents))
+    unknown_agents = [agent for agent in requested_agents if agent not in AGENT_TARGETS]
+    if unknown_agents:
+        raise InstallConflict(f"Unknown agent targets: {', '.join(unknown_agents)}")
+    return requested_agents
+
+
+def _reject_escaping_symlinks(targets: Iterable[Path], project_root: Path) -> None:
+    """Refuse targets and parents whose symlinks leave the project root."""
+    for target in targets:
+        try:
+            target.relative_to(project_root)
+        except ValueError:
+            raise InstallConflict(f"Refusing to write outside project root: {target}")
+        current = target
+        while True:
+            if current.is_symlink():
+                try:
+                    resolved = current.resolve()
+                except (OSError, RuntimeError) as exc:
+                    raise InstallConflict(f"Could not resolve symlink safely: {current}") from exc
+                try:
+                    resolved.relative_to(project_root)
+                except ValueError:
+                    raise InstallConflict(
+                        f"Refusing to follow symlink outside project root: {current} -> {resolved}"
+                    )
+            if current == project_root:
+                break
+            current = current.parent
+
+
 def _preflight_runtime(project_root: Path) -> None:
     check = project_root / "tools" / "codebase-analysis-ai" / "check.py"
     if check.exists() and (
@@ -157,6 +198,83 @@ def _preflight_managed_file(target: Path) -> None:
         raise InstallConflict(f"Refusing to overwrite non-file target: {target}")
     if MANAGED not in target.read_text(encoding="utf-8", errors="replace"):
         raise InstallConflict(f"Refusing to overwrite unmanaged file: {target}")
+
+
+def _preflight_hooks_path(project_root: Path, with_hooks: bool) -> str:
+    if not (with_hooks and (project_root / ".git").exists()):
+        return ""
+    configured = subprocess.run(
+        ["git", "config", "--get", "core.hooksPath"],
+        cwd=project_root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    hooks_path = configured.stdout.strip()
+    if configured.returncode not in (0, 1):
+        raise InstallConflict(configured.stderr.strip() or "Could not inspect core.hooksPath")
+    if hooks_path and hooks_path != ".githooks":
+        configured_path = Path(hooks_path)
+        if not configured_path.is_absolute():
+            configured_path = project_root / configured_path
+        if configured_path.exists():
+            raise InstallConflict(f"Refusing to replace existing core.hooksPath: {hooks_path}")
+        # A stale path must not prevent setup. The installer will create
+        # .githooks and replace the unusable local configuration below.
+        hooks_path = ""
+    return hooks_path
+
+
+def _preflight_project(
+    project_root: Path,
+    requested_agents: list[str],
+    with_agent_rules: bool,
+    with_hooks: bool,
+    with_github_action: bool,
+) -> tuple[str, list[Path]]:
+    mutation_targets = _mutation_targets(
+        project_root,
+        requested_agents,
+        with_agent_rules,
+        with_hooks,
+        with_github_action,
+        AGENT_TARGETS,
+    )
+    # Containment must run before any target is read or written so an external
+    # symlink is never followed, even for a read-only ownership check.
+    _reject_escaping_symlinks(mutation_targets, project_root)
+    hooks_path = _preflight_hooks_path(project_root, with_hooks)
+    _preflight_runtime(project_root)
+    if with_agent_rules:
+        for agent in requested_agents:
+            _template_name, target_name = AGENT_TARGETS[agent]
+            _preflight_agent_file(project_root / target_name)
+    if with_hooks:
+        for hook_name in HOOK_NAMES:
+            _preflight_managed_file(project_root / ".githooks" / hook_name)
+    if with_github_action:
+        _preflight_managed_file(project_root / ".github" / "workflows" / "codebase-analysis-ai.yml")
+    return hooks_path, mutation_targets
+
+
+def preflight_project_components(
+    project_root: Path,
+    agents: Iterable[str],
+    with_agent_rules: bool,
+    with_hooks: bool,
+    with_github_action: bool,
+) -> None:
+    """Validate project component targets without changing the filesystem."""
+    project_root = project_root.resolve()
+    requested_agents = _normalize_agents(agents)
+    _preflight_project(
+        project_root,
+        requested_agents,
+        with_agent_rules,
+        with_hooks,
+        with_github_action,
+    )
 
 
 def _copy_runtime(project_root: Path) -> list[str]:
@@ -215,7 +333,7 @@ def _mutation_targets(
     if with_agent_rules:
         targets.extend(project_root / agent_targets[agent][1] for agent in requested_agents)
     if with_hooks:
-        targets.extend(project_root / ".githooks" / name for name in ("post-commit", "pre-push", "post-merge", "post-rewrite"))
+        targets.extend(project_root / ".githooks" / name for name in HOOK_NAMES)
     if with_github_action:
         targets.append(project_root / ".github" / "workflows" / "codebase-analysis-ai.yml")
     return list(dict.fromkeys(targets))
@@ -291,58 +409,13 @@ def install_project_components(
 ) -> list[str]:
     project_root = project_root.resolve()
     assets = skill_root() / "assets"
-    agent_targets = {
-        "codex": ("AGENTS.md", "AGENTS.md"),
-        "claude": ("CLAUDE.md", "CLAUDE.md"),
-        "gemini": ("GEMINI.md", "GEMINI.md"),
-        "copilot": ("copilot-instructions.md", ".github/copilot-instructions.md"),
-    }
-    requested_agents = list(dict.fromkeys(agents))
-    unknown_agents = [agent for agent in requested_agents if agent not in agent_targets]
-    if unknown_agents:
-        raise InstallConflict(f"Unknown agent targets: {', '.join(unknown_agents)}")
-
-    hooks_path = ""
-    if with_hooks and (project_root / ".git").exists():
-        configured = subprocess.run(
-            ["git", "config", "--get", "core.hooksPath"],
-            cwd=project_root,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
-        hooks_path = configured.stdout.strip()
-        if configured.returncode not in (0, 1):
-            raise InstallConflict(configured.stderr.strip() or "Could not inspect core.hooksPath")
-        if hooks_path and hooks_path != ".githooks":
-            configured_path = Path(hooks_path)
-            if not configured_path.is_absolute():
-                configured_path = project_root / configured_path
-            if configured_path.exists():
-                raise InstallConflict(f"Refusing to replace existing core.hooksPath: {hooks_path}")
-            # A stale path must not prevent setup. The installer will create
-            # .githooks and replace the unusable local configuration below.
-            hooks_path = ""
-
-    _preflight_runtime(project_root)
-    if with_agent_rules:
-        for agent in requested_agents:
-            _template_name, target_name = agent_targets[agent]
-            _preflight_agent_file(project_root / target_name)
-    if with_hooks:
-        for hook_name in ("post-commit", "pre-push", "post-merge", "post-rewrite"):
-            _preflight_managed_file(project_root / ".githooks" / hook_name)
-    if with_github_action:
-        _preflight_managed_file(project_root / ".github" / "workflows" / "codebase-analysis-ai.yml")
-
-    mutation_targets = _mutation_targets(
+    requested_agents = _normalize_agents(agents)
+    hooks_path, mutation_targets = _preflight_project(
         project_root,
         requested_agents,
         with_agent_rules,
         with_hooks,
         with_github_action,
-        agent_targets,
     )
     snapshot = _snapshot_files(mutation_targets)
     created_directories = _missing_parent_directories(mutation_targets, project_root)
@@ -353,7 +426,7 @@ def install_project_components(
 
         if with_agent_rules:
             for agent in requested_agents:
-                template_name, target_name = agent_targets[agent]
+                template_name, target_name = AGENT_TARGETS[agent]
                 block = (assets / "adapters" / template_name).read_text(encoding="utf-8")
                 action = append_managed_block_if_missing(project_root / target_name, block)
                 if action:
@@ -361,7 +434,7 @@ def install_project_components(
 
         if with_hooks:
             hook_dir = project_root / ".githooks"
-            for hook_name in ("post-commit", "pre-push", "post-merge", "post-rewrite"):
+            for hook_name in HOOK_NAMES:
                 target = hook_dir / hook_name
                 action = _copy_managed_file(assets / "hooks" / hook_name, target)
                 executable = bool(target.stat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
