@@ -10,7 +10,7 @@ After changing application behavior, APIs, schemas, security, configuration, dep
 5. Inspect only changed source files, mapped documents, and their direct first-level links.
 6. Verify `docs/index.md` on every documentation change and update it when navigation, paths, or document purposes change.
 7. When a document declares a `documentKind`, preserve it and its required sections; do not apply the topic template to an ADR, runbook, reference, or analysis report.
-8. When `docs/decisions/` exists, check it for accepted decisions affected by the change. Never rewrite an accepted ADR; propose a new ADR that supersedes it. When a PlanVault plan exists, link it from the ADR and never modify the plan.
+8. When `docs/decisions/` exists, check it for accepted decisions affected by the change. Never rewrite an accepted ADR; propose a new ADR that supersedes it. When a PlanVault plan exists, link it from the ADR, list the plan in `metadata.relatedPlans`, and never modify the plan. A completed plan never changes an ADR status.
 9. Treat `docs/_analysis/` as dated reports and `docs/_archive/` as historical material; do not index or routinely update them.
 10. Never scan the entire repository unless the user explicitly requests a full documentation bootstrap.
 11. If `docs/` does not exist and bootstrap was not explicit, ask whether to initialize documentation or stop.

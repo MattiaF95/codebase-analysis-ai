@@ -24,6 +24,7 @@ If a profile is missing, stale, unmanaged, undiscoverable, native delegation is 
 10. Validate the impacted subset for technical accuracy, language consistency, readability, links, and unresolved mappings.
 11. Verify `docs/index.md` on every documentation update. Modify it when documents are added, removed, renamed, moved, or their purpose/navigation description becomes stale, and keep every area index and active kind index linked. Keep `docs/_meta/coverage.md` consistent with the map through the `coverage` command; never list `docs/_analysis/` or `docs/_archive/` as active documentation.
 12. After the corresponding document has been reviewed and updated, refresh hashes only for the reviewed changed source paths. Never refresh hashes for decision records, whose `sourceHashes` stay empty.
-13. Re-run the deterministic checker after refreshing hashes and report any remaining stale mappings, kind, section, ADR, navigation, or coverage errors.
+13. Re-run the deterministic checker after refreshing hashes and report any remaining stale mappings, kind, section, ADR, navigation, coverage, or PlanVault link errors.
+14. Follow `planvault-bridge.md`: report architectural decisions that are not yet promoted to ADRs, but do not create an ADR or modify a plan without explicit confirmation. A completed plan does not change an ADR status. When a plan and an ADR link each other, keep the plan-to-ADR link and the ADR `metadata.relatedPlans` entry consistent.
 
 Never expand from a first-level related document to its own related documents during the same update.

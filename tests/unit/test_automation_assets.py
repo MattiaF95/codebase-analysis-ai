@@ -31,6 +31,12 @@ class AutomationAssetsTest(unittest.TestCase):
             "unregisteredDocuments",
             "indexErrors",
             "removedMappings",
+            "kindErrors",
+            "sectionErrors",
+            "adrErrors",
+            "coverageErrors",
+            "navigationErrors",
+            "planvaultErrors",
         ):
             self.assertIn(f'"{key}"', content)
 
@@ -107,6 +113,26 @@ class AutomationAssetsTest(unittest.TestCase):
             with self.subTest(name=name):
                 content = (templates / name).read_text(encoding="utf-8")
                 self.assertIn("codebase-analysis-ai:scope:start", content)
+
+    def test_planvault_bridge_is_documented_and_wired_into_modes(self):
+        bridge = (SKILL / "references" / "planvault-bridge.md").read_text(encoding="utf-8")
+        for phrase in (
+            "Promotion rule",
+            "Links between plans and ADRs",
+            "relatedPlans",
+            "A completed plan does not change an ADR status",
+        ):
+            self.assertIn(phrase, bridge)
+
+        skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("references/planvault-bridge.md", skill)
+        for mode in ("update-mode.md", "audit-mode.md"):
+            content = (SKILL / "references" / mode).read_text(encoding="utf-8")
+            self.assertIn("planvault-bridge.md", content, mode)
+
+        for name in ("AGENTS.md", "CLAUDE.md", "GEMINI.md", "copilot-instructions.md"):
+            content = (SKILL / "assets" / "adapters" / name).read_text(encoding="utf-8")
+            self.assertIn("metadata.relatedPlans", content, name)
 
     def test_adr_templates_preserve_canonical_structure(self):
         templates = SKILL / "assets" / "templates"

@@ -20,6 +20,7 @@ For an explicitly full audit, also read `subagent-contract.md`. Reuse existing h
 6. Verify that TODOs and future functionality have explicit sources.
 7. Check direct related documents for contradictions and inconsistent terminology.
 8. Report findings using the shared `findings` contract: classify each item as `bug`, `security`, `reliability`, `maintainability`, `coverage-gap`, or `documentation`, and use `critical`, `high`, `medium`, `low`, or `info` severity. Include observed behavior, impact, confidence, verification level, recommended action, and evidence. Preserve every critical and high finding and record any lower-severity truncation.
-9. Do not modify files unless the user changes the request to `update`.
+9. Follow `planvault-bridge.md`: when PlanVault plans exist, report architectural decisions that remain only in a plan's decision log and are not promoted to ADRs, and report broken or one-sided plan/ADR links. Do not create ADRs, edit plans, or change ADR status; a completed plan is not evidence that an ADR should change.
+10. Do not modify files unless the user changes the request to `update`.
 
 If the user requests a full documentation audit, include the complete-scan boundary in the initial contract before expanding beyond mapped documentation sources.

@@ -41,6 +41,7 @@ from codebase_analysis_ai.git_changes import (
 )
 from codebase_analysis_ai.impact_graph import resolve_impact
 from codebase_analysis_ai.link_validator import validate_links
+from codebase_analysis_ai.planvault import detect_planvault_plans, validate_planvault_links
 from codebase_analysis_ai.project_detection import inventory_project
 from codebase_analysis_ai.project_installer import InstallConflict, install_project_components
 from codebase_analysis_ai.source_hashes import sha256_file
@@ -170,6 +171,7 @@ def command_check(args: argparse.Namespace) -> int:
             set(document_paths) | adr_paths,
         )
         adr_errors = validate_decision_records(root, documentation_map)
+        planvault_errors = validate_planvault_links(root, documentation_map)
         navigation = navigation_issues(root, documentation_map)
     except (MapError, GitError, OSError) as exc:
         return _print_check_failure(args, str(exc), returncode=2)
@@ -183,6 +185,7 @@ def command_check(args: argparse.Namespace) -> int:
         *link_errors,
         *section_errors,
         *adr_errors,
+        *planvault_errors,
         *navigation["navigationErrors"],
         *navigation["coverageErrors"],
     ]
@@ -206,7 +209,7 @@ def command_check(args: argparse.Namespace) -> int:
         "adrErrors": adr_errors,
         "coverageErrors": navigation["coverageErrors"],
         "navigationErrors": navigation["navigationErrors"],
-        "planvaultErrors": [],
+        "planvaultErrors": planvault_errors,
         "errors": errors,
     }
     if args.json:
@@ -281,12 +284,15 @@ def command_validate_docs(args: argparse.Namespace) -> int:
     if documentation_map is not None:
         navigation = navigation_issues(root, documentation_map)
         adr_errors = validate_decision_records(root, documentation_map)
+        planvault_errors = validate_planvault_links(root, documentation_map)
         report["navigationErrors"] = navigation["navigationErrors"]
         report["coverageErrors"] = navigation["coverageErrors"]
         report["adrErrors"] = adr_errors
+        report["planvaultErrors"] = planvault_errors
         report["issues"].extend(navigation["navigationErrors"])
         report["issues"].extend(navigation["coverageErrors"])
         report["issues"].extend(adr_errors)
+        report["issues"].extend(planvault_errors)
         report["valid"] = not report["issues"]
     if map_issue:
         report["issues"].insert(0, map_issue)
@@ -303,6 +309,33 @@ def command_coverage(args: argparse.Namespace) -> int:
     else:
         print(json.dumps(counts, indent=2))
     return 0
+
+
+def command_planvault(args: argparse.Namespace) -> int:
+    root = _root(args.root)
+    documentation_map = None
+    map_issue = None
+    try:
+        documentation_map = load_map(root)
+    except MapError as exc:
+        map_issue = str(exc)
+
+    artifacts = detect_planvault_plans(root)
+    errors = (
+        validate_planvault_links(root, documentation_map)
+        if documentation_map is not None
+        else []
+    )
+    report = {
+        "detected": bool(artifacts),
+        "artifacts": artifacts,
+        "planvaultErrors": errors,
+        "mapErrors": [map_issue] if map_issue else [],
+    }
+    print(json.dumps(report, indent=2))
+    if map_issue:
+        return 2
+    return 1 if args.strict and errors else 0
 
 
 def command_install(args: argparse.Namespace) -> int:
@@ -368,6 +401,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     coverage.add_argument("--markdown", action="store_true", help="Print a Markdown coverage document")
     coverage.set_defaults(handler=command_coverage)
+
+    planvault = subparsers.add_parser(
+        "planvault", help="Detect PlanVault plans and validate plan-to-ADR links"
+    )
+    planvault.add_argument(
+        "--strict", action="store_true", help="Return a failure status when link errors are found"
+    )
+    planvault.set_defaults(handler=command_planvault)
 
     install = subparsers.add_parser("install", help="Install project automation components")
     install.add_argument("--agents", nargs="+", default=["codex"], choices=["codex", "claude", "gemini", "copilot", "all"])

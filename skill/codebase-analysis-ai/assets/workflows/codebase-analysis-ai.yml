@@ -52,6 +52,12 @@ jobs:
               "unregisteredDocuments",
               "indexErrors",
               "removedMappings",
+              "kindErrors",
+              "sectionErrors",
+              "adrErrors",
+              "coverageErrors",
+              "navigationErrors",
+              "planvaultErrors",
           )
           try:
               with open(sys.argv[1], encoding="utf-8") as stream:

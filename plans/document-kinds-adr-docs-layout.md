@@ -7,8 +7,8 @@ RETRIAGE: NO
 - `PLAN_STATUS: IN_PROGRESS`
 - `EXECUTION_READINESS: READY`
 - `EXECUTION_SCOPE: FULL_PLAN`
-- `CURRENT_REQ: REQ-4.1.1`
-- `NEXT_ACTION: implement Phase 4 REQ-4.1.1 through REQ-4.1.5, verify, review, and commit`
+- `CURRENT_REQ: REQ-5.1.1`
+- `NEXT_ACTION: implement Phase 5 REQ-5.1.1 through REQ-5.1.4, verify, review, and commit`
 - `COMPLETION_ALLOWED: NO`
 
 ## 1. Objective
@@ -93,11 +93,11 @@ Rendere il modello documentale capace di distinguere il tipo di documento oltre 
 
 ### 6.1 Rilevamento, promozione e link
 
-- [ ] REQ-4.1.1 Rilevamento opzionale: il sistema riconosce piani PlanVault single-file e 3-core-file quando presenti nel repository, ma non li richiede, non li modifica e non fallisce se PlanVault non è installato.
-- [ ] REQ-4.1.2 Regola di promozione: una decisione resta nel `Decision Log` del piano finché è tattica o locale; diventa ADR quando è architetturale, durevole, vincola piani futuri o richiede una migrazione; la regola è documentata e verificabile.
-- [ ] REQ-4.1.3 Link bidirezionali: un ADR può linkare il piano che lo ha confermato e un piano può linkare l'ADR; i link sono repo-relative, validati quando entrambi gli artefatti esistono e non duplicano contenuto tra piano e ADR.
-- [ ] REQ-4.1.4 Comportamento di update e audit: update e audit segnalano le decisioni architetturali non ancora promosse ad ADR, ma non creano ADR e non modificano piani senza conferma esplicita; un piano completato non cambia lo stato dell'ADR.
-- [ ] REQ-4.1.5 Documentazione e guardrail: la skill espone una reference dedicata al rapporto ADR/PlanVault, il router delle modalità e i guardrail distinguono esecuzione, rationale e proprietà dei file.
+- [x] REQ-4.1.1 Rilevamento opzionale: il sistema riconosce piani PlanVault single-file e 3-core-file quando presenti nel repository, ma non li richiede, non li modifica e non fallisce se PlanVault non è installato.
+- [x] REQ-4.1.2 Regola di promozione: una decisione resta nel `Decision Log` del piano finché è tattica o locale; diventa ADR quando è architetturale, durevole, vincola piani futuri o richiede una migrazione; la regola è documentata e verificabile.
+- [x] REQ-4.1.3 Link bidirezionali: un ADR può linkare il piano che lo ha confermato e un piano può linkare l'ADR; i link sono repo-relative, validati quando entrambi gli artefatti esistono e non duplicano contenuto tra piano e ADR.
+- [x] REQ-4.1.4 Comportamento di update e audit: update e audit segnalano le decisioni architetturali non ancora promosse ad ADR, ma non creano ADR e non modificano piani senza conferma esplicita; un piano completato non cambia lo stato dell'ADR.
+- [x] REQ-4.1.5 Documentazione e guardrail: la skill espone una reference dedicata al rapporto ADR/PlanVault, il router delle modalità e i guardrail distinguono esecuzione, rationale e proprietà dei file.
 
 **Verifica fase**
 - Un repository senza PlanVault produce documentazione e ADR validi senza errori.

@@ -173,8 +173,8 @@ def _destination(raw_target: str) -> str:
     return unquote(target.split("#", 1)[0])
 
 
-def repository_links(root: Path, relative: str) -> set[str]:
-    """Return existing repository-relative files linked from one document."""
+def resolved_link_targets(root: Path, relative: str) -> set[str]:
+    """Return repository-relative link targets, including missing files."""
     root = root.resolve()
     document = resolve_repository_path(root, relative)
     if not document.is_file():
@@ -194,6 +194,16 @@ def repository_links(root: Path, relative: str) -> set[str]:
         except ValueError:
             continue
     return links
+
+
+def repository_links(root: Path, relative: str) -> set[str]:
+    """Return existing repository-relative files linked from one document."""
+    root = root.resolve()
+    return {
+        target
+        for target in resolved_link_targets(root, relative)
+        if (root / target).is_file()
+    }
 
 
 def validate_links(root: Path, markdown_paths: Iterable[str]) -> list[str]:
