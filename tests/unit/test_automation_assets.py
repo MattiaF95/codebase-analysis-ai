@@ -31,7 +31,6 @@ class AutomationAssetsTest(unittest.TestCase):
             "unregisteredDocuments",
             "indexErrors",
             "removedMappings",
-            "kindErrors",
             "sectionErrors",
             "adrErrors",
             "coverageErrors",

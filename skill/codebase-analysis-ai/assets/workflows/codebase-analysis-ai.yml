@@ -52,7 +52,6 @@ jobs:
               "unregisteredDocuments",
               "indexErrors",
               "removedMappings",
-              "kindErrors",
               "sectionErrors",
               "adrErrors",
               "coverageErrors",

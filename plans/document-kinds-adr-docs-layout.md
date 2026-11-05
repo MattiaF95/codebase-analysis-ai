@@ -4,12 +4,12 @@ ANALYSIS: COMPLETE
 RETRIAGE: NO
 
 ## Agent execution header
-- `PLAN_STATUS: IN_PROGRESS`
+- `PLAN_STATUS: COMPLETE`
 - `EXECUTION_READINESS: READY`
 - `EXECUTION_SCOPE: FULL_PLAN`
-- `CURRENT_REQ: REQ-5.1.1`
-- `NEXT_ACTION: implement Phase 5 REQ-5.1.1 through REQ-5.1.4, verify, review, and commit`
-- `COMPLETION_ALLOWED: NO`
+- `CURRENT_REQ: none`
+- `NEXT_ACTION: none; final review complete`
+- `COMPLETION_ALLOWED: YES`
 
 ## 1. Objective
 
@@ -109,10 +109,10 @@ Rendere il modello documentale capace di distinguere il tipo di documento oltre 
 
 ### 7.1 Gate, test e compatibilità
 
-- [ ] REQ-5.1.1 Integrazione nel gate: `check`/`validate-docs` validano kind, sezioni, ADR e coverage senza modificare i documenti; `--warn-only` resta non bloccante su tutti i nuovi errori e `--json` produce sempre un report deserializzabile.
-- [ ] REQ-5.1.2 Suite di regressione: i test coprono catalogo, schema legacy, sezioni localizzate, layout e index, ADR e supersession, link ADR/piano, esclusione di `_analysis`/`_archive` e assenza di aggiornamenti automatici degli hash ADR.
-- [ ] REQ-5.1.3 Documentazione pubblica: README, reference e template descrivono la struttura `docs/`, i kind, gli ADR e il bridge PlanVault in modo coerente con il comportamento osservato, senza contratti morti o duplicati.
-- [ ] REQ-5.1.4 Rollout e compatibilità: i repository esistenti mantengono mappe, path e documenti attuali; le nuove directory vengono create solo quando servono; `schemaVersion` resta `1`; non vengono introdotte dipendenze esterne.
+- [x] REQ-5.1.1 Integrazione nel gate: `check`/`validate-docs` validano kind, sezioni, ADR e coverage senza modificare i documenti; `--warn-only` resta non bloccante su tutti i nuovi errori e `--json` produce sempre un report deserializzabile.
+- [x] REQ-5.1.2 Suite di regressione: i test coprono catalogo, schema legacy, sezioni localizzate, layout e index, ADR e supersession, link ADR/piano, esclusione di `_analysis`/`_archive` e assenza di aggiornamenti automatici degli hash ADR.
+- [x] REQ-5.1.3 Documentazione pubblica: README, reference e template descrivono la struttura `docs/`, i kind, gli ADR e il bridge PlanVault in modo coerente con il comportamento osservato, senza contratti morti o duplicati.
+- [x] REQ-5.1.4 Rollout e compatibilità: i repository esistenti mantengono mappe, path e documenti attuali; le nuove directory vengono create solo quando servono; `schemaVersion` resta `1`; non vengono introdotte dipendenze esterne.
 
 **Verifica fase**
 - `check --warn-only` restituisce 0 per un ADR invalido e `--json` resta valido.
@@ -132,16 +132,16 @@ Ogni fase produce un commit atomico solo dopo il completamento di tutti i suoi R
 
 ## 9. Exit criteria
 
-- [ ] Tutti i REQ-ID attivi sono `[x]` con la verifica di fase soddisfatta.
-- [ ] `python3 -m unittest discover -s tests -p "test_*.py"` passa su Python 3.9 e 3.12.
-- [ ] Una mappa legacy senza `documentKind`/`sections` continua a caricarsi e a validarsi.
-- [ ] Un nuovo documento creato da bootstrap/migrate dichiara `documentKind` e le sezioni richieste.
-- [ ] `docs/index.md` linka ogni area index, ogni kind index attivo e `_meta/coverage.md`.
-- [ ] `docs/_analysis/` non è indicizzato e `docs/_archive/` resta escluso.
-- [ ] Un ADR valido è registrato, indicizzato e validato; una supersession non riscrive il rationale del vecchio ADR.
-- [ ] Il bridge PlanVault è opzionale: senza PlanVault non ci sono errori, con PlanVault i link bidirezionali sono validati.
-- [ ] Nessuna nuova dipendenza esterna oltre a Git e standard library.
-- [ ] Nessun documento manuale viene riscritto o rimosso dal solo fatto di adottare il nuovo modello.
+- [x] Tutti i REQ-ID attivi sono `[x]` con la verifica di fase soddisfatta.
+- [x] `python3 -m unittest discover -s tests -p "test_*.py"` passa su Python 3.9 e 3.12.
+- [x] Una mappa legacy senza `documentKind`/`sections` continua a caricarsi e a validarsi.
+- [x] Un nuovo documento creato da bootstrap/migrate dichiara `documentKind` e le sezioni richieste.
+- [x] `docs/index.md` linka ogni area index, ogni kind index attivo e `_meta/coverage.md`.
+- [x] `docs/_analysis/` non è indicizzato e `docs/_archive/` resta escluso.
+- [x] Un ADR valido è registrato, indicizzato e validato; una supersession non riscrive il rationale del vecchio ADR.
+- [x] Il bridge PlanVault è opzionale: senza PlanVault non ci sono errori, con PlanVault i link bidirezionali sono validati.
+- [x] Nessuna nuova dipendenza esterna oltre a Git e standard library.
+- [x] Nessun documento manuale viene riscritto o rimosso dal solo fatto di adottare il nuovo modello.
 
 ## 10. Risks and mitigations
 

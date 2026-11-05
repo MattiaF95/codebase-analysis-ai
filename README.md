@@ -24,7 +24,9 @@ Codebase Analysis AI reduces documentation drift by:
 
 - starting from Git changes instead of scanning the complete repository;
 - mapping source files to directly affected documents;
-- checking links, hashes, metadata, naming, and documentation coverage;
+- checking links, hashes, metadata, naming, document kinds, and documentation coverage;
+- validating immutable decision records and their supersession chains;
+- optionally bridging decisions to PlanVault execution plans without modifying them;
 - reviewing bootstrap macro-areas through isolated, read-only subagents;
 - preserving a consistent documentation structure and evidence-backed TODOs;
 - supporting monoliths, full-stack applications, microservices, libraries, mobile applications, and infrastructure repositories.
@@ -149,7 +151,23 @@ After installation, run the deterministic checker directly with:
 python3 tools/codebase-analysis-ai/check.py check --mode working-tree
 ```
 
-`check` exits non-zero when it finds documentation drift. Add `--json` for a machine-readable report on stdout, or `--warn-only` to keep every check failure non-blocking while still reporting it, including map, Git, and I/O errors.
+`check` exits non-zero when it finds documentation drift. Add `--json` for a machine-readable report on stdout, or `--warn-only` to keep every check failure non-blocking while still reporting it, including map, Git, and I/O errors. Alongside hashes, links, and mappings, the report exposes `sectionErrors`, `adrErrors`, `coverageErrors`, `navigationErrors`, and `planvaultErrors`; document-kind violations are reported through map errors. The JSON output is always deserializable, including on early failures.
+
+Report documentation coverage by kind and decision-record status, either as JSON or as a Markdown summary:
+
+```bash
+python3 tools/codebase-analysis-ai/check.py coverage
+python3 tools/codebase-analysis-ai/check.py coverage --markdown
+```
+
+Detect optional PlanVault plans and validate plan-to-ADR links without modifying anything:
+
+```bash
+python3 tools/codebase-analysis-ai/check.py planvault
+python3 tools/codebase-analysis-ai/check.py planvault --strict
+```
+
+A repository without `plans/` reports `detected: false` and no error; the bridge never makes PlanVault a prerequisite.
 
 Inspect setup state with the current bundled skill before relying on a project-local runtime:
 
@@ -172,9 +190,10 @@ Validate generated or changed managed documents with:
 
 ```bash
 python3 tools/codebase-analysis-ai/check.py validate-docs docs/index.md
+python3 tools/codebase-analysis-ai/check.py validate-docs --strict
 ```
 
-`validate-docs` accepts repository-relative Markdown paths only. Absolute paths, including paths inside the repository, and any path containing a `..` segment are rejected with `path must be repository-relative`; the validator does not read files outside the Git root.
+`validate-docs` accepts repository-relative Markdown paths only. Absolute paths, including paths inside the repository, and any path containing a `..` segment are rejected with `path must be repository-relative`; the validator does not read files outside the Git root. When the documentation map is present, it also validates declared document kinds and localized sections, decision records and supersession, index navigation, coverage, and PlanVault links. Without `--strict` these issues are reported but do not fail the command; the command never rewrites documents.
 
 ## Automation
 
@@ -204,7 +223,15 @@ Topic documents normally follow this order:
 4. Active functionality and planned work
 5. Related documentation and sources
 
-The skill never invents functionality, TODOs, commands, dependencies, or architectural relationships. Analyzer reports must cite repository-relative paths and source lines, remain bounded, and expose uncertainties instead of unsupported claims. Sensitive files, credentials, certificates, environment files, dependency directories, and generated build directories are excluded from analysis.
+The skill never invents functionality, TODOs, commands, dependencies, or architectural relationships.
+
+## Document kinds, decisions, and PlanVault
+
+Beyond the source area and topic, every new document declares a `documentKind` in the documentation map. The runtime catalog in `scripts/codebase_analysis_ai/document_kinds.py` defines the supported kinds and their required sections: `project-readme`, `documentation-index`, `area`, `topic`, `architecture`, `api-reference`, `data-model`, `runbook`, `test-strategy`, `backlog`, `kind-index`, `decision-record`, `reference`, and `analysis-report`. The map stores the localized heading used for each canonical section key, so validation works in the project language instead of assuming English titles. Documents without `documentKind` or `sections` remain valid for backward compatibility and are reported as legacy, never rewritten automatically.
+
+Durable architectural decisions become decision records under `docs/decisions/` (or the recognized legacy alias `docs/adr/`) using `ADR-NNNN-<slug>.md`. An accepted ADR is immutable except for status and supersession links; a changed decision creates a new ADR and marks the old one `superseded`. ADRs have no source patterns or source hashes, so `refresh` never updates them, and the gate validates filename, number, status, date, required sections, index links, and supersession consistency.
+
+When PlanVault plans exist under `plans/`, the skill detects single-file and three-core (`spec.md`, `plan.md`, `tasks.md`) plans without requiring or modifying them. Tactical choices stay in a plan's decision log; architectural, durable, or migration-triggering decisions are promoted to ADRs. A plan may link an ADR and the ADR lists the plan in `metadata.relatedPlans`; the gate validates both directions when both artifacts exist. Update and audit report decisions that are not yet promoted but never create ADRs or alter plans without explicit confirmation, and a completed plan never changes an ADR status. Analyzer reports must cite repository-relative paths and source lines, remain bounded, and expose uncertainties instead of unsupported claims. Sensitive files, credentials, certificates, environment files, dependency directories, and generated build directories are excluded from analysis.
 
 ## Generated documentation structure
 
@@ -217,16 +244,19 @@ project/
 ├── README.md
 ├── docs/
 │   ├── index.md
-│   ├── architecture/
-│   ├── backend/
+│   ├── architecture/             cross-area components and flows
+│   ├── backend/                  area index plus topic documents
 │   ├── frontend/
-│   ├── database/
-│   ├── infrastructure/
-│   └── _meta/
+│   ├── decisions/                ADR-NNNN-<slug>.md and index.md
+│   ├── reference/                stable lookup material
+│   ├── runbooks/                 operational procedures
+│   ├── _meta/                    documentation-map.json and coverage.md
+│   ├── _analysis/                optional dated reports, not indexed
+│   └── _archive/                 optional historical material, excluded
 └── tools/codebase-analysis-ai/
 ```
 
-`docs/index.md` links to every top-level active document or area index and summarizes each destination. Agents read it before deeper documentation and update it whenever navigation, document paths, or document purposes change. Historical originals under `docs/_archive/` are intentionally omitted.
+`docs/index.md` links to every area index, every active kind index, and `_meta/coverage.md`, and summarizes each destination. Agents read it before deeper documentation and update it whenever navigation, document paths, or document purposes change. Historical originals under `docs/_archive/` are intentionally omitted, and `docs/_analysis/` reports remain linkable evidence without appearing in active navigation or coverage. New directories are created only when they contain real content; a small repository may need only `docs/index.md`, `_meta/`, and one area index.
 
 `<active-host-agent-directory>` resolves to `.codex/agents/`, `.claude/agents/`, `.gemini/agents/`, or `.github/agents/`. Mobile applications, infrastructure repositories, libraries, command-line tools, and other repository types receive a taxonomy appropriate to their evidence.
 
@@ -242,7 +272,7 @@ The installable skill lives under `skill/codebase-analysis-ai/`; the separate Py
 python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
-The tests verify structural inventory, mappings, one-level impact resolution, link validation, installer preflight, idempotency and rollback, symlink containment, runtime conflict reporting, `setup-state` truthfulness, validate-docs repository-relative boundaries, language metadata, stale-source detection, hash refreshes, and the warning-only automation assets. Skill validation checks its structure and metadata.
+The tests verify structural inventory, mappings, one-level impact resolution, link validation, installer preflight, idempotency and rollback, symlink containment, runtime conflict reporting, `setup-state` truthfulness, validate-docs repository-relative boundaries, language metadata, stale-source detection, hash refreshes, document-kind and localized-section contracts, canonical `docs/` layout and navigation, coverage counts, ADR lifecycle and supersession, PlanVault detection and bidirectional links, legacy-map compatibility, and the warning-only automation assets. Skill validation checks its structure and metadata.
 
 ## Repository structure
 
