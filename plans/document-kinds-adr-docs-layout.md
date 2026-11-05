@@ -171,4 +171,4 @@ Ogni fase produce un commit atomico solo dopo il completamento di tutti i suoi R
 - **Structure**: piano single-file. Cinque fasi coese, massimo 5 REQ-ID per fase; la separazione in `spec.md`/`plan.md`/`tasks.md` non ridurrebbe il context drift.
 - **Reusable review pattern**: nessun `review-audit-template.md` creato; le verifiche di fase sono specifiche e non ripetute.
 - **Final `RETRIAGE` state**: `NO`.
-- **Execution readiness**: `READY`; `PLAN_STATUS: OPEN`, `COMPLETION_ALLOWED: NO` perché tutti i REQ-ID e gli exit criteria restano aperti.
+- **Execution readiness**: `READY`; `PLAN_STATUS: COMPLETE`, `COMPLETION_ALLOWED: YES`; tutti i REQ-ID e gli exit criteria sono soddisfatti e coperti dalla suite.
