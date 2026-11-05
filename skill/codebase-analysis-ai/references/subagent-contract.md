@@ -12,6 +12,7 @@ The parent must pass the complete brief directly to each analyzer. Allowed paths
 
 - `area`, allowed repository-relative paths, and excluded paths;
 - evidence questions, documentation facets, and the already resolved documentation language;
+- the document kinds in scope, their required and recommended section keys, and whether decision discovery is in scope;
 - read-only and no-recursion rules;
 - the complete output schema below.
 
@@ -37,7 +38,27 @@ Return JSON only. Every documentation claim must carry repository evidence.
   "terminology": [{"term": "RBAC", "definition": "Role-Based Access Control", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
   "activeFunctionality": [{"description": "Create and retrieve records", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
   "todos": [{"path": "...", "line": 1, "text": "..."}],
-  "documentationNeeded": [{"topic": "Authentication", "reason": "The flow crosses multiple components", "sources": [{"path": "...", "line": 1, "symbol": "..."}]}],
+  "documentationNeeded": [{
+    "topic": "Authentication",
+    "documentKind": "topic",
+    "sectionNeeds": ["context", "how-it-works"],
+    "reason": "The flow crosses multiple components",
+    "sources": [{"path": "...", "line": 1, "symbol": "..."}]
+  }],
+  "decisionCandidates": [{
+    "title": "Use short-lived signed sessions",
+    "category": "security",
+    "proposedStatus": "accepted",
+    "context": "Session validation is duplicated across services",
+    "decision": "Centralize session validation in the shared auth module",
+    "alternatives": ["Keep per-service validation", "Use opaque database sessions"],
+    "consequences": ["One signing key must be rotated centrally", "Services lose independent session formats"],
+    "supersedes": ["ADR-0002"],
+    "relatedPlans": ["plans/auth-hardening.md"],
+    "sources": [{"path": "...", "line": 1, "symbol": "..."}],
+    "confidence": "high",
+    "confidenceReason": "The shared module and all callers were inspected"
+  }],
   "findings": [{
     "kind": "documentation",
     "severity": "high",
@@ -59,6 +80,10 @@ Return JSON only. Every documentation claim must carry repository evidence.
 
 Each `sources` array for a reported claim must contain at least one object with a repository-relative `path`, a one-based `line` when available, and an optional `symbol`. Findings may cite up to five representative sources when the inconsistency crosses multiple files. Use an empty result array instead of unsupported claims.
 
+## Decision candidates
+
+`decisionCandidates` is optional and may be empty. A candidate records a decision that the evidence already shows, not a recommendation for new code. Report the title, category, context, decision, alternatives, consequences, optional `supersedes`/`relatedPlans`, evidence sources, and confidence. `proposedStatus` is a hint only: the parent decides the final ADR status and alone writes or updates the decision record. Tactical or reversible choices remain in the plan's decision log when PlanVault is used, or in implementation notes; do not inflate them into ADRs.
+
 Keep the report bounded and documentation-oriented: group closely related findings, return at most 24 items in ordinary arrays, at most 40 TODOs, and at most 40 `findings` per report. Do not enumerate every function or file when one responsibility or flow explains them. Findings must use exactly one kind (`bug`, `security`, `reliability`, `maintainability`, `coverage-gap`, or `documentation`) and one severity (`critical`, `high`, `medium`, `low`, or `info`). Every finding must include `description`, `observedBehavior`, `impact`, `confidence` (`high`, `medium`, or `low`), `confidenceReason`, `verification` (`source-only`, `test`, `runtime`, or `external-state`), `recommendedAction`, `affectedPaths`, and evidence-backed `sources`. Severity describes impact and must not be used as confidence. Report every `critical` and `high` finding; if the findings exceed the report budget, put only lower-severity findings in `truncation`. When any relevant result is omitted, add `{\"section\": \"...\", \"omitted\": 1, \"reason\": \"report limit\", \"nextAction\": \"request continuation or inspect the omitted scope in the parent\"}` to `truncation`.
 
 The `findings` section is mandatory in shape even when it is empty. An empty array means that the assigned scope produced no supported finding in the shared taxonomy; it does not mean that the scope was not inspected.
@@ -70,12 +95,13 @@ The parent must preserve, validate, prioritize, and merge `findings` before writ
 - Read only the assigned allowed paths and never write, edit, execute mutating commands, or propose code fixes.
 - Do not spawn or invoke other agents. Do not choose a documentation language or writing style.
 - Report uncertainty instead of inferring behavior that the repository does not prove.
+- Report documentation kind needs and decision candidates; do not create or modify documentation, ADRs, or plans.
 
 ## Parent validation and merge
 
 Reject a report when it is not valid JSON, names the wrong area, cites paths outside the allowed scope, or provides claims without sources. Retry one malformed report once; after a second failure, record the native invocation failure and perform the same analysis sequentially in the parent.
 
-The parent resolves duplicate flows and terminology, maps evidence to documentation topics, validates cross-area claims against all relevant areas, and alone writes documentation. Do not pass one analyzer's conclusions to another. Initial absence of a profile is a fallback only after the user-approved delegation plan is recorded and the applicable profile creation attempt fails. In `bootstrap` and `migrate`, missing profiles must be created when required by the shared policy; in `update` and `audit`, missing or stale profiles are explicit fallback reasons and must be reported.
+The parent resolves duplicate flows and terminology, validates every proposed `documentKind` against the applicable catalog, maps evidence to document kinds and topics, validates decision candidates, and alone writes documentation and decision records. The parent decides ADR status, supersession, and PlanVault links; analyzers only report candidates. Do not pass one analyzer's conclusions to another. Initial absence of a profile is a fallback only after the user-approved delegation plan is recorded and the applicable profile creation attempt fails. In `bootstrap` and `migrate`, missing profiles must be created when required by the shared policy; in `update` and `audit`, missing or stale profiles are explicit fallback reasons and must be reported.
 
 ## Delegation decision
 

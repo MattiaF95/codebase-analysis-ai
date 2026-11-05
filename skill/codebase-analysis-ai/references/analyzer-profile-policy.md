@@ -9,9 +9,9 @@ The parent agent owns the source macro-area decision and the delegation proposal
 - `bootstrap`: derive source macro-areas and documentation topics from structural evidence, then count relevant files after excluding documentation, generated output, dependencies, VCS data, and agent metadata;
 - `migrate`: resolve source ownership, document mapping, and cross-area responsibilities from the migration inputs, then count relevant files after applying the same exclusions.
 
-Every area needs evidence-backed candidate paths. Detector filenames, extensions, and module-root candidates are evidence to inspect, not final ownership decisions. Source macro-areas and documentation topics remain separate dimensions; overlapping evidence paths are allowed when the questions differ.
+Every area needs evidence-backed candidate paths. Detector filenames, extensions, and module-root candidates are evidence to inspect, not final ownership decisions. Source macro-areas, documentation kinds, and documentation topics remain separate dimensions; overlapping evidence paths are allowed when the questions differ. An analyzer owns an evidence scope; the parent owns document-kind selection, ADR promotion, and the documentation structure.
 
-After bounded discovery and before substantive analysis, include exactly one of `parent-only`, `selective`, or `all` in the initial contract, with a brief motivation and per-area assignment when applicable. Include the planned document write set and the host-native paths of any analyzer profiles to be created. Ask for confirmation before delegation, profile creation, or writes. A user-selected delegation policy changes delegation only; it must not reduce documentation scope. An explicit `parent-only` choice suppresses profile creation and analyzer delegation even above the file-count threshold.
+After bounded discovery and before substantive analysis, include exactly one of `parent-only`, `selective`, or `all` in the initial contract, with a brief motivation and per-area assignment when applicable. Include the planned document write set, the document kinds to be produced, whether decision discovery is in scope, and the host-native paths of any analyzer profiles to be created. Ask for confirmation before delegation, profile creation, or writes. A user-selected delegation policy changes delegation only; it must not reduce documentation scope. An explicit `parent-only` choice suppresses profile creation and analyzer delegation even above the file-count threshold.
 
 When the selected policy is not `parent-only` and at least two independent macro-areas each contain at least 15 relevant files, creating one analyzer profile per such area and delegating those areas are mandatory in `bootstrap` and when `migrate` requires delegated analysis. The threshold must not be replaced by an agent judgment, but an explicit user choice of `parent-only` overrides it. Below the threshold, use `parent-only` unless the user explicitly selects another supported policy. A small or overlapping area may remain parent-only.
 
@@ -35,7 +35,11 @@ Do not retry an unavailable or timed-out invocation. Retain the existing single 
 
 ## Invocation and merge
 
-Build a self-contained brief for every delegated analyzer with source scope, allowed and excluded paths, documentation facets, evidence questions, language, read-only boundary, recursion prohibition, and the complete JSON output contract from `subagent-contract.md`. Do not create profiles for inactive hosts or ask analyzers to locate the contract through a relative path.
+Build a self-contained brief for every delegated analyzer with source scope, allowed and excluded paths, the applicable document kinds and section needs, documentation facets, decision questions, evidence questions, language, read-only boundary, recursion prohibition, and the complete JSON output contract from `subagent-contract.md`. Do not create profiles for inactive hosts or ask analyzers to locate the contract through a relative path.
+
+## Decision candidates and document kinds
+
+Analyzers may report documentation kind needs and decision candidates, but they never select the final `documentKind`, create ADRs, or modify PlanVault plans. The parent owns catalog mapping, required sections, ADR status, supersession, and links. A decision candidate becomes an ADR only when it is architectural, durable, or constrains future work; tactical decisions remain in the plan's decision log.
 
 Refresh or restart host discovery only when required, then attempt native delegation for every approved brief after the capability preflight. Use parallel delegation for independent areas when available, bounded by the host concurrency limit and invocation deadline. Retry one malformed report once. For each failed area, use parent analysis and record the concrete cause and lost guarantees.
 

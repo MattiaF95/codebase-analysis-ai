@@ -9,12 +9,13 @@ Write one profile per macro-area to `.codex/agents/<area>-analyzer.toml`. Normal
 ```toml
 # Managed by Codebase Analysis AI
 name = "<area>-analyzer"
-description = "Read-only analyzer for the <area> macro-area during documentation bootstrap or migration."
+description = "Read-only analyzer for the <area> macro-area in documentation workflows."
 sandbox_mode = "read-only"
 developer_instructions = """
 Analyze only these repository-relative paths: <paths>.
 The invocation brief repeats the allowed and excluded paths and takes the narrower scope.
 Return JSON only using the complete contract supplied in that brief.
+Report documentation kind needs and decision candidates; do not create or modify documentation, ADRs, or plans.
 Do not write files, propose code fixes, access excluded paths, or delegate to another agent.
 """
 ```

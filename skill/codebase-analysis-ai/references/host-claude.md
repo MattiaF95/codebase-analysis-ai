@@ -9,7 +9,7 @@ Write one profile per macro-area to `.claude/agents/<area>-analyzer.md`. Normali
 ```markdown
 ---
 name: <area>-analyzer
-description: Use this agent to review the <area> macro-area during documentation bootstrap or migration.
+description: Use this agent to review the <area> macro-area in documentation workflows.
 tools: Read, Grep, Glob
 model: inherit
 ---
@@ -17,6 +17,7 @@ model: inherit
 Analyze only these repository-relative paths: <paths>.
 The invocation brief repeats the allowed and excluded paths and takes the narrower scope.
 Return JSON only using the complete contract supplied in that brief.
+Report documentation kind needs and decision candidates; do not create or modify documentation, ADRs, or plans.
 Do not modify files, propose code fixes, access excluded paths, or delegate to another agent.
 ```
 
