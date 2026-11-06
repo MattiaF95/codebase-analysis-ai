@@ -42,10 +42,7 @@ DEFAULT_EXCLUDED_PARTS = {
     "coverage",
     "htmlcov",
     "out",
-    "bin",
     "obj",
-    "tmp",
-    "logs",
     "__pycache__",
 }
 

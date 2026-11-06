@@ -178,8 +178,8 @@ class CheckerIntegrationTest(unittest.TestCase):
                 "schemaVersion": 1,
                 "settings": {},
                 "documents": {
-                    "index": {"path": "docs/index.md", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
-                    "guide": {"path": "docs/guide.md", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
+                    "index": {"path": "docs/index.md", "documentKind": "topic", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
+                    "guide": {"path": "docs/guide.md", "documentKind": "topic", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
                 },
             }), encoding="utf-8")
             run("git", "add", ".", cwd=project)
@@ -209,8 +209,8 @@ class CheckerIntegrationTest(unittest.TestCase):
                 "schemaVersion": 1,
                 "settings": {},
                 "documents": {
-                    "index": {"path": "docs/index.md", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
-                    "guide": {"path": "docs/guide.md", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
+                    "index": {"path": "docs/index.md", "documentKind": "topic", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
+                    "guide": {"path": "docs/guide.md", "documentKind": "topic", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
                 },
             }), encoding="utf-8")
             run("git", "add", ".", cwd=project)
@@ -240,7 +240,7 @@ class CheckerIntegrationTest(unittest.TestCase):
                 "schemaVersion": 1,
                 "settings": {},
                 "documents": {
-                    "guide": {"path": "docs/guide.md", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
+                    "guide": {"path": "docs/guide.md", "documentKind": "topic", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
                 },
             }), encoding="utf-8")
 
@@ -269,7 +269,7 @@ class CheckerIntegrationTest(unittest.TestCase):
                 "schemaVersion": 1,
                 "settings": {},
                 "documents": {
-                    "index": {"path": "docs/index.md", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
+                    "index": {"path": "docs/index.md", "documentKind": "topic", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
                 },
             }), encoding="utf-8")
 
@@ -374,7 +374,7 @@ class CheckerIntegrationTest(unittest.TestCase):
                 "schemaVersion": 1,
                 "settings": {},
                 "documents": {
-                    "index": {"path": "docs/index.md", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
+                    "index": {"path": "docs/index.md", "documentKind": "topic", "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []},
                 },
             }), encoding="utf-8")
 
@@ -419,6 +419,68 @@ class CheckerIntegrationTest(unittest.TestCase):
             strict_report = json.loads(strict.stdout)
             self.assertTrue(warned_report["mapErrors"])
             self.assertTrue(strict_report["mapErrors"])
+
+    def test_non_utf8_document_returns_clean_error_and_reports_bin_scripts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            run("git", "init", "-b", "main", cwd=project)
+            (project / "docs" / "_meta").mkdir(parents=True)
+            (project / "docs" / "index.md").write_bytes(b"# Documentation \xff\n")
+            (project / "docs" / "_meta" / "documentation-map.json").write_text(json.dumps({
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {"index": {
+                    "path": "docs/index.md", "documentKind": "documentation-index",
+                    "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": [],
+                }},
+            }), encoding="utf-8")
+
+            result = run(
+                sys.executable, str(CLI), "--root", str(project),
+                "check", "--mode", "working-tree", "--json", cwd=project,
+            )
+
+            self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            self.assertTrue(json.loads(result.stdout)["errors"])
+
+    def test_scripts_under_bin_are_reported_as_unmapped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            run("git", "init", "-b", "main", cwd=project)
+            (project / "docs" / "_meta").mkdir(parents=True)
+            (project / "bin").mkdir()
+            (project / "bin" / "tool.sh").write_text("echo hi\n", encoding="utf-8")
+            (project / "docs" / "_meta" / "documentation-map.json").write_text(json.dumps({
+                "schemaVersion": 1, "settings": {}, "documents": {},
+            }), encoding="utf-8")
+
+            result = run(
+                sys.executable, str(CLI), "--root", str(project),
+                "check", "--mode", "working-tree", "--json", cwd=project,
+            )
+
+            self.assertIn("bin/tool.sh", json.loads(result.stdout)["unmappedFiles"])
+
+    def test_legacy_map_reports_unregistered_documents_as_warnings_without_blocking(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            run("git", "init", "-b", "main", cwd=project)
+            (project / "docs" / "_meta").mkdir(parents=True)
+            (project / "docs" / "orphan.md").write_text("# Orphan\n", encoding="utf-8")
+            (project / "docs" / "_meta" / "documentation-map.json").write_text(json.dumps({
+                "schemaVersion": 1, "settings": {}, "documents": {},
+            }), encoding="utf-8")
+
+            result = run(
+                sys.executable, str(CLI), "--root", str(project),
+                "check", "--mode", "working-tree", "--json", cwd=project,
+            )
+
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual([], report["errors"])
+            self.assertIn("Unregistered document: docs/orphan.md", report["warnings"])
 
     def test_git_failure_honors_warn_only_and_emits_json(self):
         with tempfile.TemporaryDirectory() as directory:

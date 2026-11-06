@@ -9,6 +9,11 @@ The engine intentionally implements a documented subset of glob syntax:
   directories (``**/test/**`` matches both ``test/a.py`` and
   ``src/test/a.py``).
 
+Maps that do not declare any ``documentKind`` are legacy maps. They keep the
+historical ``fnmatch`` semantics (``*`` also crosses ``/``) through
+``legacy_glob_match`` so existing ``sourcePatterns`` and ``ignorePatterns``
+continue to match the same files.
+
 Character classes (``[...]``) are not supported; every other character is
 matched literally. Matching is performed on the whole normalized path and is
 case-sensitive, which keeps the semantics identical across platforms.
@@ -16,6 +21,7 @@ case-sensitive, which keeps the semantics identical across platforms.
 
 from __future__ import annotations
 
+import fnmatch
 import re
 from functools import lru_cache
 from typing import Pattern
@@ -56,3 +62,8 @@ def compile_glob(pattern: str) -> Pattern[str]:
 def glob_match(path: str, pattern: str) -> bool:
     """Return whether a normalized repository path matches a glob pattern."""
     return compile_glob(pattern).match(path.replace("\\", "/")) is not None
+
+
+def legacy_glob_match(path: str, pattern: str) -> bool:
+    """Match with the historical ``fnmatch`` semantics used by legacy maps."""
+    return fnmatch.fnmatch(path.replace("\\", "/"), pattern.replace("\\", "/"))

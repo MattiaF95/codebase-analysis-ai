@@ -7,7 +7,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from .document_kinds import document_kind
+from .document_kinds import DOCUMENT_KINDS
 from .documentation_map import (
     DECISION_DIRECTORY,
     DOCUMENTATION_INDEX,
@@ -22,6 +22,7 @@ from .link_validator import repository_links, validate_links
 ADR_FILENAME = re.compile(r"^ADR-(\d{4})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
 ADR_TITLE = re.compile(r"^#\s+ADR-(\d{4}):\s+\S")
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+DECISION_RECORD_KIND = DOCUMENT_KINDS["decision-record"]
 ADR_STATUSES = {"proposed", "accepted", "rejected", "superseded", "deprecated"}
 
 
@@ -49,10 +50,6 @@ def _reference_list(value: object) -> list[str]:
     if isinstance(value, list) and all(isinstance(item, str) for item in value):
         return value
     return []
-
-
-def _record_number(record: dict[str, Any]) -> str:
-    return str(record["number"])
 
 
 def decision_record_paths(documentation_map: DocumentationMap) -> set[str]:
@@ -101,7 +98,6 @@ def validate_decision_records(root: Path, documentation_map: DocumentationMap) -
     """Validate registered decision records and their supersession chains."""
     errors: list[str] = []
     records: dict[str, dict[str, Any]] = {}
-    legacy_errors: list[str] = []
 
     for doc_id, document in documentation_map.documents.items():
         if not isinstance(document, dict):
@@ -115,8 +111,9 @@ def validate_decision_records(root: Path, documentation_map: DocumentationMap) -
         if kind_id != "decision-record" and not (_is_adr_location(path) and match):
             continue
         if not match:
-            target = errors if kind_id == "decision-record" else legacy_errors
-            target.append(f"{path}: decision record filename must match ADR-NNNN-<slug>.md")
+            # Only reachable for registered decision-record documents: a legacy
+            # path-only entry without a matching filename is skipped above.
+            errors.append(f"{path}: decision record filename must match ADR-NNNN-<slug>.md")
             continue
         records[doc_id] = {
             "id": doc_id,
@@ -127,14 +124,10 @@ def validate_decision_records(root: Path, documentation_map: DocumentationMap) -
             "metadata": document.get("metadata") if isinstance(document.get("metadata"), dict) else {},
         }
 
-    if legacy_errors:
-        # Legacy path-only decision records are reported by audit, not failed by check.
-        errors.extend(legacy_errors)
-
     numbers: dict[str, str] = {}
     references: dict[str, list[str]] = {}
     for doc_id, record in records.items():
-        number = _record_number(record)
+        number = str(record["number"])
         if number in numbers:
             errors.append(f"Duplicate ADR number {number}: {numbers[number]} and {doc_id}")
         else:
@@ -181,13 +174,11 @@ def validate_decision_records(root: Path, documentation_map: DocumentationMap) -
             except ValueError:
                 errors.append(f"{path}: decision record date is not a valid calendar date")
 
-        catalog = document_kind("decision-record")
-        assert catalog is not None
         sections = document.get("sections")
         if not isinstance(sections, dict):
             errors.append(f"{path}: decision record must declare localized sections")
         else:
-            missing = [key for key in catalog.required_sections if key not in sections]
+            missing = [key for key in DECISION_RECORD_KIND.required_sections if key not in sections]
             if missing:
                 errors.append(
                     f"{path}: decision record is missing sections: " + ", ".join(missing)
@@ -271,9 +262,10 @@ def validate_decision_records(root: Path, documentation_map: DocumentationMap) -
             target = records[resolved_superseded_by]
             target_supersedes = _reference_list(target["metadata"].get("supersedes"))
             target_status = target["metadata"].get("status")
-            if target_status not in {"accepted", "proposed"}:
+            # A superseding record may itself be superseded later (A -> B -> C).
+            if target_status not in {"accepted", "proposed", "superseded"}:
                 errors.append(
-                    f"{path}: supersededBy target {target['path']} must be accepted or proposed"
+                    f"{path}: supersededBy target {target['path']} must be accepted, proposed or superseded"
                 )
             if not any(
                 _resolve_reference(value, references)[0] == doc_id
@@ -282,9 +274,6 @@ def validate_decision_records(root: Path, documentation_map: DocumentationMap) -
                 errors.append(
                     f"{path}: supersededBy target {target['path']} does not declare this record in supersedes"
                 )
-
-        if status == "accepted" and resolved_superseded_by is not None:
-            errors.append(f"{path}: an accepted record cannot itself be supersededBy another record")
 
         related_plans = _reference_list(metadata.get("relatedPlans"))
         for plan in related_plans:

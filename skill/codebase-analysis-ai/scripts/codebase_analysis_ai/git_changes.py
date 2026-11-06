@@ -10,9 +10,6 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 
-ZERO_SHA = "0" * 40
-
-
 def is_zero_oid(value: str) -> bool:
     """Recognize the null object ID used by SHA-1 and SHA-256 repositories."""
     return len(value) in {40, 64} and all(character == "0" for character in value)

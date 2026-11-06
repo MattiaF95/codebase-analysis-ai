@@ -31,3 +31,5 @@ Do not modify files, propose code fixes, access excluded paths, or delegate to a
 - If the capability preflight reports the native mechanism unavailable, or discovery or invocation fails or times out after the required restart, record the cause and use the sequential fallback defined in `subagent-contract.md`.
 
 Source: [Claude Code subagents](https://code.claude.com/docs/en/sub-agents).
+
+`setup-state` reports `unverified`, not `managed`, for components it cannot compare with the skill bundle (for example when run from the installed project runtime). Never treat `unverified` as `managed`: rerun `setup-state` from the skill bundle before proposing or skipping setup changes.

@@ -166,6 +166,7 @@ class DocumentationMapTest(unittest.TestCase):
                 "documents": {
                     "guide": {
                         "path": "docs/guide.md",
+                        "documentKind": "topic",
                         "sourcePatterns": [],
                         "sourceHashes": {},
                         "relatedDocuments": [],
@@ -189,7 +190,7 @@ class DocumentationMapTest(unittest.TestCase):
             documentation_map = DocumentationMap(Path("map.json"), {
                 "schemaVersion": 1,
                 "settings": {},
-                "documents": {},
+                "documents": {"guide": {"path": "docs/guide.md", "documentKind": "topic"}},
             })
             (root / "docs").mkdir()
             (root / "docs" / "index.md").write_text("# Index\n", encoding="utf-8")
@@ -206,6 +207,7 @@ class DocumentationMapTest(unittest.TestCase):
             "documents": {
                 "single": {
                     "path": "docs/single.md",
+                    "documentKind": "topic",
                     "sourcePatterns": ["src/*.py"],
                     "sourceHashes": {},
                     "relatedDocuments": [],
@@ -231,6 +233,43 @@ class DocumentationMapTest(unittest.TestCase):
         self.assertEqual({"recursive"}, documentation_map.matching_documents("src/a/b.py"))
         self.assertEqual({"tests"}, documentation_map.matching_documents("test/a.py"))
         self.assertEqual({"recursive", "tests"}, documentation_map.matching_documents("src/test/a.py"))
+
+    def test_legacy_map_keeps_fnmatch_semantics(self):
+        documentation_map = DocumentationMap(Path("map.json"), {
+            "schemaVersion": 1,
+            "settings": {"ignorePatterns": ["src/*.tmp"]},
+            "documents": {
+                "single": {
+                    "path": "docs/single.md",
+                    "sourcePatterns": ["src/*.py"],
+                    "sourceHashes": {},
+                    "relatedDocuments": [],
+                },
+            },
+        })
+
+        self.assertFalse(documentation_map.is_canonical)
+        self.assertTrue(documentation_map.is_ignored("src/nested/a.tmp"))
+        self.assertEqual({"single"}, documentation_map.matching_documents("src/a/b.py"))
+
+    def test_legacy_map_reports_document_issues_as_warnings_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            documentation_map = DocumentationMap(Path("map.json"), {
+                "schemaVersion": 1,
+                "settings": {},
+                "documents": {
+                    "guide": {"path": "docs/guide.md", "sourcePatterns": [], "sourceHashes": {}},
+                },
+            })
+            (root / "docs").mkdir()
+            (root / "docs" / "orphan.md").write_text("# Orphan\n", encoding="utf-8")
+
+            issues = documentation_issues(root, documentation_map)
+
+            self.assertEqual((), issues.errors)
+            self.assertIn("Unregistered document: docs/orphan.md", issues.warnings)
+            self.assertIn("Missing document: docs/guide.md", issues.warnings)
 
     def test_recognizes_new_infrastructure_mobile_and_frontend_sources(self):
         documentation_map = DocumentationMap(Path("map.json"), {

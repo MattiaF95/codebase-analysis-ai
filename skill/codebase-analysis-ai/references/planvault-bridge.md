@@ -52,7 +52,7 @@ Register the reverse link in the map, not in the ADR body alone:
 }
 ```
 
-Paths in `relatedPlans` are repository-relative and must exist when validated.
+Paths in `relatedPlans` are repository-relative and must exist when validated. A three-core plan (`spec.md`, `plan.md`, `tasks.md`) is one unit: listing any one of its files satisfies the reverse link for links from any of them. Legacy records registered under `docs/adr/` are recognized as decision records.
 
 ## Update, audit, and ownership
 

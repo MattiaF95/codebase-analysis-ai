@@ -74,4 +74,11 @@ Kind indexes such as `docs/decisions/index.md`, `docs/reference/index.md`, `docs
 
 A decision record uses `documentKind: decision-record`, declares all six required sections (`context`, `decision`, `alternatives`, `consequences`, `evidence`, `links`), and keeps `sourcePatterns` and `sourceHashes` empty. Its `metadata` object carries `status`, `date`, and optional `supersedes`, `supersededBy`, and `relatedPlans`; see `decision-records.md` for the lifecycle and validation rules. `docs/adr/` remains a recognized legacy alias of `docs/decisions/`.
 
+## Legacy and canonical maps
+
+A map is **canonical** as soon as one document declares `documentKind`; otherwise it is **legacy**. Behavior differs in two places so existing repositories keep working until they migrate:
+
+- **Glob semantics.** Canonical maps use the documented glob subset: `*` and `?` never cross `/`, `**` does, and `**/` also matches zero directories (use `src/**/*.ts` for nested files). Legacy maps keep the historical `fnmatch` semantics, where `*` also crosses `/`. Review `sourcePatterns` and `ignorePatterns` when migrating a legacy map.
+- **Document registration checks.** For a canonical map, a registered but missing document, an active `docs/**/*.md` file that is not registered, and a missing or unregistered `docs/index.md` are blocking errors. For a legacy map the same findings are reported in the `warnings` field of the `check` report and on stderr, and never block the pre-push hook or the CI audit.
+
 `taxonomy` stores the user-approved, parent-derived bootstrap classification. `sourceAreas` maps stable area IDs to candidate path patterns, evidence paths, and a reason. `documentationTopics` references only known source-area IDs. Later `update` and `audit` runs reuse this metadata instead of reinterpreting the complete repository. The taxonomy may be absent in maps created before this feature; report that delegation boundaries cannot be verified and use the parent fallback rather than inventing them.

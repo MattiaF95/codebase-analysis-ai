@@ -12,7 +12,6 @@ sys.path.insert(0, str(ROOT / "skill" / "codebase-analysis-ai" / "scripts"))
 from codebase_analysis_ai.git_changes import (  # noqa: E402
     Change,
     GitError,
-    ZERO_SHA,
     ci_event_changes,
     is_zero_oid,
     live_paths,
@@ -23,6 +22,9 @@ from codebase_analysis_ai.git_changes import (  # noqa: E402
     rewrite_changes,
     working_tree_changes,
 )
+
+
+ZERO_SHA = "0" * 40
 
 
 class GitChangesTest(unittest.TestCase):

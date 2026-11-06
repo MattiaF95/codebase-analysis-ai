@@ -85,6 +85,7 @@ def _empty_check_report(args: argparse.Namespace) -> dict[str, object]:
         "coverageErrors": [],
         "navigationErrors": [],
         "planvaultErrors": [],
+        "warnings": [],
         "errors": [],
     }
 
@@ -172,7 +173,7 @@ def command_check(args: argparse.Namespace) -> int:
         adr_errors = validate_decision_records(root, documentation_map)
         planvault_errors = validate_planvault_links(root, documentation_map)
         navigation = navigation_issues(root, documentation_map)
-    except (MapError, GitError, OSError) as exc:
+    except (MapError, GitError, OSError, UnicodeError) as exc:
         return _print_check_failure(args, str(exc), returncode=2)
 
     document_errors = list(issues.errors)
@@ -208,6 +209,7 @@ def command_check(args: argparse.Namespace) -> int:
         "coverageErrors": navigation["coverageErrors"],
         "navigationErrors": navigation["navigationErrors"],
         "planvaultErrors": planvault_errors,
+        "warnings": list(issues.warnings),
         "errors": errors,
     }
     if args.json:
@@ -222,6 +224,9 @@ def command_check(args: argparse.Namespace) -> int:
                 print(f"- {doc_id}", file=sys.stderr)
     else:
         print("Codebase Analysis AI: documentation is synchronized for the selected changes.")
+    if not args.json:
+        for warning in issues.warnings:
+            print(f"Warning (legacy map, non-blocking): {warning}", file=sys.stderr)
 
     if errors and not args.warn_only:
         return 1
@@ -420,7 +425,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         return args.handler(args)
-    except (MapError, OSError, RuntimeError) as exc:
+    except (MapError, OSError, RuntimeError, UnicodeError) as exc:
         if getattr(args, "command", None) == "check":
             return _print_check_failure(
                 args,

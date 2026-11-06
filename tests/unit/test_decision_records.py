@@ -250,6 +250,39 @@ class DecisionRecordsTest(unittest.TestCase):
 
             self.assertTrue(any("requires metadata.supersededBy" in error for error in errors))
 
+    def test_supersession_chain_through_a_superseded_record_is_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = [
+                write_adr(root, "0001", "first"),
+                write_adr(root, "0002", "second"),
+                write_adr(root, "0003", "third"),
+            ]
+            write_indexes(root, paths)
+            documentation_map = build_map({
+                "a": adr_entry(paths[0], status="superseded", supersededBy="ADR-0002"),
+                "b": adr_entry(
+                    paths[1], status="superseded", supersedes="ADR-0001", supersededBy="ADR-0003"
+                ),
+                "c": adr_entry(paths[2], supersedes="ADR-0002"),
+            })
+
+            self.assertEqual([], validate_decision_records(root, documentation_map))
+
+    def test_superseded_by_rejected_record_is_reported(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = [write_adr(root, "0001", "first"), write_adr(root, "0002", "second")]
+            write_indexes(root, paths)
+            documentation_map = build_map({
+                "a": adr_entry(paths[0], status="superseded", supersededBy="ADR-0002"),
+                "b": adr_entry(paths[1], status="rejected", supersedes="ADR-0001"),
+            })
+
+            errors = validate_decision_records(root, documentation_map)
+
+            self.assertTrue(any("must be accepted, proposed or superseded" in e for e in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

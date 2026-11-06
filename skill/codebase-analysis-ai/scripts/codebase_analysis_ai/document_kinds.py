@@ -96,10 +96,6 @@ SECTION_LABELS = {
     "recommendations": "Recommendations",
 }
 
-LIFECYCLES = {"living", "immutable-after-acceptance", "snapshot"}
-INDEX_POLICIES = {"indexed", "kind-index", "excluded"}
-
-
 DOCUMENT_KINDS: dict[str, DocumentKind] = {
     "project-readme": DocumentKind(
         id="project-readme",
@@ -239,15 +235,6 @@ def document_kind(kind_id: object) -> DocumentKind | None:
 def known_kind_ids() -> tuple[str, ...]:
     """Return every supported document kind in stable catalog order."""
     return tuple(DOCUMENT_KINDS)
-
-
-def known_section_keys() -> frozenset[str]:
-    """Return every section key understood by the catalog."""
-    return frozenset(SECTION_LABELS)
-
-
-def is_known_section(key: object) -> bool:
-    return isinstance(key, str) and key in SECTION_LABELS
 
 
 def section_contract_errors(kind_id: object, sections: object) -> list[str]:

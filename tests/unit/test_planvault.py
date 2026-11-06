@@ -135,6 +135,32 @@ class PlanVaultTest(unittest.TestCase):
 
             self.assertEqual([], validate_planvault_links(root, documentation_map))
 
+    def test_any_core_file_of_a_three_core_plan_satisfies_the_reverse_link(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            adr = "docs/decisions/ADR-0001-decision.md"
+            write_adr(root, adr)
+            link = "[ADR-0001](../../docs/decisions/ADR-0001-decision.md)\n"
+            for name in ("spec.md", "plan.md", "tasks.md"):
+                write_plan(root, f"plans/auth/{name}", f"# {name}\n\n{link}")
+            documentation_map = build_map({"adr": adr_entry(adr, ["plans/auth/plan.md"])})
+
+            self.assertEqual([], validate_planvault_links(root, documentation_map))
+
+    def test_legacy_registered_adr_is_recognized(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            adr = "docs/adr/ADR-0001-decision.md"
+            write_adr(root, adr)
+            write_plan(root, "plans/auth.md", "# Plan\n\n[ADR](../docs/adr/ADR-0001-decision.md)\n")
+            entry = {"path": adr, "sourcePatterns": [], "sourceHashes": {}, "relatedDocuments": []}
+            documentation_map = build_map({"adr": entry})
+
+            errors = validate_planvault_links(root, documentation_map)
+
+            self.assertEqual(1, len(errors))
+            self.assertIn("relatedPlans", errors[0])
+
     def test_link_without_related_plans_is_reported(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -9,7 +9,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .document_kinds import document_kind, section_contract_errors
-from .glob_patterns import glob_match
+from .glob_patterns import glob_match, legacy_glob_match
 from .path_filters import is_excluded_path
 
 
@@ -345,6 +345,18 @@ class DocumentationMap:
                     errors.append(f"{doc_id}: unknown related document {related}")
         return errors
 
+    @property
+    def is_canonical(self) -> bool:
+        """True once any document declares a ``documentKind``; otherwise the map is legacy."""
+        return any(
+            isinstance(document, dict) and document.get("documentKind") is not None
+            for document in self.documents.values()
+        )
+
+    def _matcher(self):
+        """Pick the glob engine once per operation: documented subset or legacy fnmatch."""
+        return glob_match if self.is_canonical else legacy_glob_match
+
     def ignore_patterns(self) -> list[str]:
         return [*DEFAULT_IGNORE, *self.settings.get("ignorePatterns", [])]
 
@@ -352,7 +364,8 @@ class DocumentationMap:
         normalized = normalize_repository_path(path)
         if is_excluded_path(PurePosixPath(normalized).parts):
             return True
-        return any(glob_match(normalized, pattern) for pattern in self.ignore_patterns())
+        matches = self._matcher()
+        return any(matches(normalized, pattern) for pattern in self.ignore_patterns())
 
     def is_relevant_source(self, path: str) -> bool:
         if self.is_ignored(path):
@@ -380,10 +393,11 @@ class DocumentationMap:
     def matching_documents(self, source_path: str) -> set[str]:
         normalized = normalize_repository_path(source_path)
         matched: set[str] = set()
+        matches = self._matcher()
         for doc_id, document in self.documents.items():
             explicit = {normalize_repository_path(item) for item in document.get("sourceHashes", {})}
             patterns = [normalize_repository_path(item) for item in document.get("sourcePatterns", [])]
-            if normalized in explicit or any(glob_match(normalized, pattern) for pattern in patterns):
+            if normalized in explicit or any(matches(normalized, pattern) for pattern in patterns):
                 matched.add(doc_id)
         return matched
 
@@ -415,14 +429,24 @@ class DocumentationIssues:
     missing: tuple[str, ...] = ()
     unregistered: tuple[str, ...] = ()
     index: tuple[str, ...] = ()
+    blocking: bool = True
 
     @property
-    def errors(self) -> tuple[str, ...]:
+    def messages(self) -> tuple[str, ...]:
         return (
             *(f"Missing document: {path}" for path in self.missing),
             *(f"Unregistered document: {path}" for path in self.unregistered),
             *self.index,
         )
+
+    @property
+    def errors(self) -> tuple[str, ...]:
+        """Blocking messages; legacy maps only report them as warnings."""
+        return self.messages if self.blocking else ()
+
+    @property
+    def warnings(self) -> tuple[str, ...]:
+        return () if self.blocking else self.messages
 
 
 def registered_document_paths(documentation_map: DocumentationMap) -> set[str]:
@@ -478,7 +502,9 @@ def documentation_issues(root: Path, documentation_map: DocumentationMap) -> Doc
         for path in active
         if path not in registered and path != DOCUMENTATION_INDEX
     )
-    return DocumentationIssues(missing, unregistered, tuple(index_errors))
+    return DocumentationIssues(
+        missing, unregistered, tuple(index_errors), blocking=documentation_map.is_canonical
+    )
 
 
 def load_map(root: Path) -> DocumentationMap:

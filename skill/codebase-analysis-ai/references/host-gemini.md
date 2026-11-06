@@ -35,3 +35,5 @@ Do not modify files, propose code fixes, access excluded paths, or delegate to a
 - If the capability preflight reports the native mechanism unavailable, or refresh, discovery, or invocation fails or times out explicitly, record the cause and use the sequential fallback defined in `subagent-contract.md`.
 
 Sources: [Gemini CLI subagents](https://github.com/google-gemini/gemini-cli/blob/main/docs/core/subagents.md), [commands](https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/commands.md), and [tools](https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/tools.md).
+
+`setup-state` reports `unverified`, not `managed`, for components it cannot compare with the skill bundle (for example when run from the installed project runtime). Never treat `unverified` as `managed`: rerun `setup-state` from the skill bundle before proposing or skipping setup changes.

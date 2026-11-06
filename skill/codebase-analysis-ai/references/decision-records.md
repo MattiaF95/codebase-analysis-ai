@@ -47,7 +47,7 @@ Copy `assets/templates/adr.md` and localize the prose and headings without chang
 - `proposed`: the decision is under review. The rationale may still be clarified.
 - `accepted`: the rationale is immutable. Change only the status or supersession links when a new decision replaces it; never rewrite its context, decision, alternatives, consequences, or evidence.
 - `rejected` and `deprecated`: terminal states for a decision that was not adopted or is no longer recommended.
-- `superseded`: requires `metadata.supersededBy` pointing to the newer ADR, and the newer ADR must list the old one in `metadata.supersedes`.
+- `superseded`: requires `metadata.supersededBy` pointing to the newer ADR, and the newer ADR must list the old one in `metadata.supersedes`. The newer ADR must be `accepted`, `proposed`, or itself `superseded`, so chains such as ADR-0001 → ADR-0002 → ADR-0003 are valid.
 
 A new decision that replaces an accepted one creates a new ADR; it does not edit the old rationale. The old ADR becomes `superseded` and both directions are recorded. A completed plan does not change an ADR's status by itself.
 

@@ -32,3 +32,5 @@ Keep `tools: [read, search]` explicit because omitted tools default to all avail
 - If the tool is disabled, the capability preflight reports the native mechanism unavailable, profile discovery fails, or native invocation fails or times out, record the cause and use the sequential fallback defined in `subagent-contract.md`.
 
 Sources: [Copilot CLI custom agents](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-custom-agents-for-cli), [custom agent configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration), and [VS Code subagents](https://code.visualstudio.com/docs/agents/subagents).
+
+`setup-state` reports `unverified`, not `managed`, for components it cannot compare with the skill bundle (for example when run from the installed project runtime). Never treat `unverified` as `managed`: rerun `setup-state` from the skill bundle before proposing or skipping setup changes.

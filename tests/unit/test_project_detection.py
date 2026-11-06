@@ -180,7 +180,7 @@ class ProjectInventoryTest(unittest.TestCase):
     def test_excludes_additional_generated_directories(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for folder in ("coverage", "out", "bin", "obj", ".next", ".angular"):
+            for folder in ("coverage", "out", "obj", ".next", ".angular"):
                 path = root / folder
                 path.mkdir()
                 (path / "package.json").write_text("{}\n", encoding="utf-8")

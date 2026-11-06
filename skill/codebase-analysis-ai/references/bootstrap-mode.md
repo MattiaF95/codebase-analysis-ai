@@ -22,3 +22,5 @@ Bootstrap creates or completes a documentation system and is the only intent all
 8. Validate language consistency, readability, acronym definitions, links, naming, map coverage, document kinds and sections, index completeness, ADR candidates, source evidence, archive and analysis exclusion, secret exclusions, profile syntax, and absence of analyzer writes. Confirm that `docs/index.md` links to coverage with `_meta/coverage.md`, then run link validation and `validate-docs`. Add `--strict` only when the repository has explicitly adopted the managed document contract.
 
 Do not leave placeholders unless essential information cannot be derived safely. Mark unresolved facts as `To verify` with the missing evidence.
+
+`setup-state` reports `unverified`, not `managed`, for components it cannot compare with the skill bundle (for example when run from the installed project runtime). Never treat `unverified` as `managed`: rerun `setup-state` from the skill bundle before proposing or skipping setup changes.

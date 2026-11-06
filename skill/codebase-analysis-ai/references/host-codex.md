@@ -30,3 +30,5 @@ Do not write files, propose code fixes, access excluded paths, or delegate to an
 - If the capability preflight reports the native mechanism unavailable, or profile creation or native invocation fails or times out, record the cause and use the sequential fallback defined in `subagent-contract.md`.
 
 Source: [Codex subagents](https://developers.openai.com/codex/subagents).
+
+`setup-state` reports `unverified`, not `managed`, for components it cannot compare with the skill bundle (for example when run from the installed project runtime). Never treat `unverified` as `managed`: rerun `setup-state` from the skill bundle before proposing or skipping setup changes.

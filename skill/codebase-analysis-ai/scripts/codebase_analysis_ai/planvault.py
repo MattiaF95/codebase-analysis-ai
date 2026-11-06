@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any
 
 from .documentation_map import (
+    DECISION_DIRECTORY,
+    LEGACY_DECISION_DIRECTORY,
     DocumentationMap,
     MapError,
     normalize_repository_path,
@@ -22,7 +24,10 @@ from .link_validator import resolved_link_targets
 
 PLANS_DIRECTORY = "plans"
 CORE_FILES = ("spec.md", "plan.md", "tasks.md")
-ADR_PATH = re.compile(r"^(?:docs/decisions|docs/adr)/ADR-\d{4}-[a-z0-9-]+\.md$")
+ADR_PATH = re.compile(
+    "^(?:" + re.escape(DECISION_DIRECTORY) + "|" + re.escape(LEGACY_DECISION_DIRECTORY) + r")ADR-\d{4}-[a-z0-9-]+\.md$"
+)
+IGNORED_DIRECTORIES = {".git", "_archive", "__pycache__", "node_modules"}
 
 
 def detect_planvault_plans(root: Path) -> list[dict[str, Any]]:
@@ -33,10 +38,11 @@ def detect_planvault_plans(root: Path) -> list[dict[str, Any]]:
 
     artifacts: list[dict[str, Any]] = []
     three_core_directories: set[str] = set()
+    markdown_files: list[Path] = []
     for current, directories, filenames in os.walk(plans_root, followlinks=False):
-        directories[:] = sorted(
-            name for name in directories
-            if name not in {".git", "_archive", "__pycache__", "node_modules"}
+        directories[:] = sorted(name for name in directories if name not in IGNORED_DIRECTORIES)
+        markdown_files.extend(
+            Path(current) / name for name in sorted(filenames) if name.endswith(".md")
         )
         if all(core in filenames for core in CORE_FILES):
             directory = Path(current)
@@ -51,12 +57,10 @@ def detect_planvault_plans(root: Path) -> list[dict[str, Any]]:
                 ],
             })
 
-    for candidate in sorted(plans_root.rglob("*.md")):
-        if not candidate.is_file() or "__pycache__" in candidate.parts:
+    for candidate in markdown_files:
+        if not candidate.is_file():
             continue
         relative = candidate.relative_to(root).as_posix()
-        if any(part in {".git", "_archive"} for part in candidate.relative_to(root).parts):
-            continue
         parent = candidate.parent.relative_to(root).as_posix()
         if parent in three_core_directories:
             continue
@@ -70,16 +74,19 @@ def _decision_records(documentation_map: DocumentationMap) -> dict[str, dict[str
     for doc_id, document in documentation_map.documents.items():
         if not isinstance(document, dict):
             continue
-        if document.get("documentKind") != "decision-record":
-            continue
         path = document.get("path")
-        if isinstance(path, str) and path:
-            metadata = document.get("metadata")
-            records[path.replace("\\", "/")] = {
-                "id": doc_id,
-                "path": path.replace("\\", "/"),
-                "metadata": metadata if isinstance(metadata, dict) else {},
-            }
+        if not isinstance(path, str) or not path:
+            continue
+        normalized = path.replace("\\", "/")
+        # Legacy path-only records in docs/adr/ are registered decision records too.
+        if document.get("documentKind") != "decision-record" and not ADR_PATH.match(normalized):
+            continue
+        metadata = document.get("metadata")
+        records[normalized] = {
+            "id": doc_id,
+            "path": normalized,
+            "metadata": metadata if isinstance(metadata, dict) else {},
+        }
     return records
 
 
@@ -126,7 +133,8 @@ def validate_planvault_links(root: Path, documentation_map: DocumentationMap) ->
                         related.add(normalize_repository_path(value))
                     except MapError:
                         continue
-                if plan_path not in related:
+                # A three-core plan is one unit: listing any of its files suffices.
+                if not related.intersection(artifact["files"]):
                     errors.append(
                         f"{plan_path}: decision record {target} does not list this plan in metadata.relatedPlans"
                     )
